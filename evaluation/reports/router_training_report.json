@@ -1,0 +1,45 @@
+{
+  "best_model": "RandomForest",
+  "cv_accuracy_mean": 0.6019,
+  "train_accuracy": 1.0,
+  "classes": [
+    "large",
+    "medium",
+    "small"
+  ],
+  "n_samples": 25,
+  "feature_dim": 395,
+  "classification_report": {
+    "large": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 7.0
+    },
+    "medium": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 9.0
+    },
+    "small": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 9.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 25.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 25.0
+    }
+  }
+}
