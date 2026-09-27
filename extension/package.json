@@ -1,0 +1,140 @@
+{
+  "name": "adaptiveroute-ai",
+  "displayName": "AdaptiveRoute — Intelligent Claude & LLM Gateway",
+  "description": "Dynamic ML model router and cost-optimizer for Claude, Grok, and ChatGPT in Cursor/VS Code. Auto-downscales simple prompts like 3*4 to small tier.",
+  "version": "1.0.0",
+  "publisher": "adaptiveroute",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jettysnigdhan/AdaptiveAI-"
+  },
+  "license": "MIT",
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "claude",
+    "anthropic",
+    "cursor",
+    "router",
+    "gateway",
+    "llm",
+    "grok",
+    "downscaling"
+  ],
+  "activationEvents": [
+    "onView:adaptiveroute.chatView",
+    "onCommand:adaptiveroute.openChat",
+    "onCommand:adaptiveroute.askSelection",
+    "onCommand:adaptiveroute.explainCode",
+    "onCommand:adaptiveroute.fixCode"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "adaptiveroute-sidebar",
+          "title": "AdaptiveRoute",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "adaptiveroute-sidebar": [
+        {
+          "id": "adaptiveroute.chatView",
+          "name": "Adaptive Claude Chat",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "adaptiveroute.openChat",
+        "title": "AdaptiveRoute: Open AI Chat Panel",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "adaptiveroute.askSelection",
+        "title": "AdaptiveRoute: Ask Claude about Selection",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "adaptiveroute.explainCode",
+        "title": "AdaptiveRoute: Explain Code (Auto-Tiered)",
+        "icon": "$(book)"
+      },
+      {
+        "command": "adaptiveroute.fixCode",
+        "title": "AdaptiveRoute: Fix Bugs in Selection",
+        "icon": "$(tools)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "adaptiveroute.askSelection",
+          "when": "editorHasSelection",
+          "group": "AdaptiveRoute@1"
+        },
+        {
+          "command": "adaptiveroute.explainCode",
+          "when": "editorHasSelection",
+          "group": "AdaptiveRoute@2"
+        },
+        {
+          "command": "adaptiveroute.fixCode",
+          "when": "editorHasSelection",
+          "group": "AdaptiveRoute@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AdaptiveRoute Settings",
+      "properties": {
+        "adaptiveroute.gatewayUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "Base URL of your running AdaptiveRoute Gateway server."
+        },
+        "adaptiveroute.defaultModel": {
+          "type": "string",
+          "default": "claude-3-5-sonnet",
+          "enum": [
+            "claude-3-5-sonnet",
+            "claude-3-5-haiku",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "grok-2",
+            "grok-2-mini",
+            "deepseek-r1:8b",
+            "adaptive-auto"
+          ],
+          "description": "Default model presented in the chat header (auto-downscaled when prompt complexity is low)."
+        },
+        "adaptiveroute.autoDownscale": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic semantic downscaling for low-complexity prompts (e.g. 3*4)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.3"
+  }
+}
