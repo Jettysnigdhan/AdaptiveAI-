@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import LocalSetupModal from '../components/LocalSetupModal';
 
 // ─── Tier Color Map ───────────────────────────────────────────────────────────
 const TIER_COLORS = { SMALL: '#4ade80', MEDIUM: '#38bdf8', LARGE: '#f59e0b' };
@@ -510,7 +511,7 @@ function CylinderCarousel3D() {
 }
 
 // ─── Section 3: DialKit-Style Split Interactive Tuning Playground ─────────────
-function InteractivePlayground({ onEnterApp }) {
+function InteractivePlayground({ onEnterApp, onTryNow }) {
   const [selectedPrompt, setSelectedPrompt] = useState(0);
   const [tau, setTau] = useState(0.82);
   const [latencyBudget, setLatencyBudget] = useState(250);
@@ -711,7 +712,7 @@ function InteractivePlayground({ onEnterApp }) {
             )}
 
             <button
-              onClick={onEnterApp}
+              onClick={onTryNow || onEnterApp}
               style={{
                 marginTop: '14px',
                 width: '100%',
@@ -733,7 +734,7 @@ function InteractivePlayground({ onEnterApp }) {
               onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <span>Launch Live Gateway &amp; Test Any Prompt</span>
+              <span>Try Now — Setup Locally or Test Live</span>
               <span>→</span>
             </button>
           </div>
@@ -1443,7 +1444,7 @@ function LivePanel() {
 }
 
 // ─── Sticky Navigation ────────────────────────────────────────────────────────
-function Nav({ onEnterApp }) {
+function Nav({ onEnterApp, onTryNow }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 36);
@@ -1481,14 +1482,15 @@ function Nav({ onEnterApp }) {
           onMouseEnter={e => e.currentTarget.style.color = '#a1a1aa'}
           onMouseLeave={e => e.currentTarget.style.color = '#71717a'}
         >GitHub</a>
-        <button onClick={onEnterApp} style={{
+        <button onClick={onTryNow} style={{
           background: '#fff', color: '#09090b', border: 'none', borderRadius: '8px',
-          padding: '7px 16px', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+          padding: '7px 18px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
           fontFamily: 'inherit', transition: 'opacity 0.15s',
+          boxShadow: '0 0 16px rgba(255,255,255,0.18)',
         }}
           onMouseEnter={e => e.currentTarget.style.opacity = '0.86'}
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >Launch Gateway</button>
+        >Try Now</button>
       </div>
     </nav>
   );
@@ -1520,6 +1522,7 @@ function SectionHead({ eyebrow, title, sub, center = true }) {
 export default function Landing({ onEnterApp }) {
   const W = 920; // max content width
   const pad = '0 24px';
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   // Dynamic Theme Accent Color (changes glowing effects across the page!)
   const [accentColor, setAccentColor] = useState('#818cf8');
@@ -1592,7 +1595,7 @@ export default function Landing({ onEnterApp }) {
         @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
       `}</style>
 
-      <Nav onEnterApp={onEnterApp} />
+      <Nav onEnterApp={onEnterApp} onTryNow={() => setShowSetupModal(true)} />
 
       {/* ── HERO WITH 3D INTERACTIVE CONTROLS ───────────────────────────── */}
       <section
@@ -1674,10 +1677,15 @@ export default function Landing({ onEnterApp }) {
             AdaptiveRoute intelligently routes every request to the minimum model capability required — and escalates automatically when the task demands more reasoning.
           </p>
 
-          <div className="hero-btns" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-            <button onClick={onEnterApp} style={{ background: '#fff', color: '#09090b', border: 'none', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s' }}
+          <div className="hero-btns" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <button onClick={() => setShowSetupModal(true)} style={{ background: '#fff', color: '#09090b', border: 'none', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.86'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-              Try AdaptiveRoute
+              Try Now
+            </button>
+            <button onClick={onEnterApp} style={{ color: '#e4e4e7', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}>
+              Live Web Chat →
             </button>
             <a href="#showcase" style={{ color: '#71717a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 400, textDecoration: 'none', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#e4e4e7'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
@@ -1698,7 +1706,7 @@ export default function Landing({ onEnterApp }) {
       {/* ── DIALKIT-STYLE INTERACTIVE TUNING PLAYGROUND ───────────────────── */}
       <section id="playground" style={{ padding: pad, paddingBottom: '140px' }}>
         <FadeIn>
-          <InteractivePlayground onEnterApp={onEnterApp} />
+          <InteractivePlayground onEnterApp={onEnterApp} onTryNow={() => setShowSetupModal(true)} />
         </FadeIn>
       </section>
 
@@ -1880,9 +1888,14 @@ print(response.choices[0].message.content)`} />
           <h2 style={{ fontSize: '52px', fontWeight: 500, letterSpacing: '-0.033em', lineHeight: 1.08, color: '#e4e4e7', marginBottom: '20px' }}>Route smarter.</h2>
           <p style={{ fontSize: '15px', color: '#71717a', lineHeight: '1.65', maxWidth: '340px', margin: '0 auto 38px' }}>Stop overspending on large models for simple tasks. Let AdaptiveRoute decide automatically.</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <button onClick={onEnterApp} style={{ background: '#fff', color: '#09090b', border: 'none', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s' }}
+            <button onClick={() => setShowSetupModal(true)} style={{ background: '#fff', color: '#09090b', border: 'none', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.86'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-              Try AdaptiveRoute
+              Try Now
+            </button>
+            <button onClick={onEnterApp} style={{ color: '#e4e4e7', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}>
+              Live Web Chat →
             </button>
             <a href="https://github.com/Jettysnigdhan/AdaptiveAI-" target="_blank" rel="noreferrer" style={{ color: '#71717a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', textDecoration: 'none', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#e4e4e7'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
@@ -1909,6 +1922,13 @@ print(response.choices[0].message.content)`} />
           ))}
         </div>
       </footer>
+
+      {/* ── LOCAL SETUP GUIDE MODAL ───────────────────────────────────────── */}
+      <LocalSetupModal
+        isOpen={showSetupModal}
+        onClose={() => setShowSetupModal(false)}
+        onEnterApp={onEnterApp}
+      />
     </div>
   );
 }
