@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Play, Shield, Clock, Layers, RefreshCw } from 'lucide-react';
+import { Activity, Play, Shield, Clock, Layers, RefreshCw, Search, ArrowUpRight, CheckCircle2, XCircle } from 'lucide-react';
 import { fetchMetrics, fetchRecentInferences, fetchBaselineComparison, runBenchmarkComparison } from '../services/api';
 
 export default function Dashboard() {
@@ -8,12 +8,14 @@ export default function Dashboard() {
   const [baselineReport, setBaselineReport] = useState(null);
   const [benchmarking, setBenchmarking] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [searchFilter, setSearchFilter] = useState('');
+  const [tierFilter, setTierFilter] = useState('ALL');
 
   const loadData = async () => {
     try {
       const [m, inf, base] = await Promise.all([
         fetchMetrics().catch(() => null),
-        fetchRecentInferences(25).catch(() => []),
+        fetchRecentInferences(30).catch(() => []),
         fetchBaselineComparison().catch(() => null),
       ]);
       setMetrics(m);
@@ -73,6 +75,23 @@ export default function Dashboard() {
     escalation_pct: metrics?.escalation_rate || 0.0,
   };
 
+  const totalReq = (req.small_requests + req.medium_requests + req.large_requests) || 1;
+  const smallPct = Math.round((req.small_requests / totalReq) * 100);
+  const medPct = Math.round((req.medium_requests / totalReq) * 100);
+  const largePct = 100 - smallPct - medPct;
+
+  const filteredInferences = inferences.filter(inf => {
+    const matchesSearch = !searchFilter ||
+      (inf.prompt || '').toLowerCase().includes(searchFilter.toLowerCase()) ||
+      (inf.final_model || '').toLowerCase().includes(searchFilter.toLowerCase()) ||
+      (inf.request_id || '').toLowerCase().includes(searchFilter.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    if (tierFilter === 'ALL') return true;
+    if (tierFilter === 'ESCALATED') return inf.escalated;
+    return (inf.final_model || '').toLowerCase().includes(tierFilter.toLowerCase());
+  });
+
   const hasBaselines = baselineReport?.status === 'available' && baselineReport?.policies && Object.keys(baselineReport.policies).length > 0;
 
   return (
@@ -99,7 +118,34 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* SECTION 16: EXPERIMENT DASHBOARD METRICS */}
+      {/* Benchmark Progress Banner */}
+      {benchmarking && (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.1)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', color: '#34d399' }}>
+            <span>Evaluating 5 Routing Policies Across Golden Prompt Suite...</span>
+            <span className="mono">Running locally</span>
+          </div>
+          <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, #10b981, #38bdf8, #818cf8)',
+              animation: 'pulseGlow 1.2s infinite ease-in-out',
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* EXPERIMENT DASHBOARD METRICS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '18px', marginBottom: '28px' }}>
         {/* Panel 1: Requests */}
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -107,21 +153,29 @@ export default function Dashboard() {
             <span>Requests</span>
             <Activity size={16} />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>
             {req.total_requests} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>total</span>
           </div>
+
+          {/* Visual stacked distribution bar */}
+          <div style={{ height: '6px', width: '100%', display: 'flex', borderRadius: '3px', overflow: 'hidden', marginBottom: '12px', background: 'rgba(255,255,255,0.06)' }}>
+            <div style={{ width: `${smallPct}%`, background: '#34d399', transition: 'width 0.4s' }} title={`Small: ${smallPct}%`} />
+            <div style={{ width: `${medPct}%`, background: '#38bdf8', transition: 'width 0.4s' }} title={`Medium: ${medPct}%`} />
+            <div style={{ width: `${largePct}%`, background: '#f59e0b', transition: 'width 0.4s' }} title={`Large: ${largePct}%`} />
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-muted)' }}>Small Requests:</span>
-              <span className="mono" style={{ color: '#34d399' }}>{req.small_requests}</span>
+              <span className="mono" style={{ color: '#34d399' }}>{req.small_requests} ({smallPct}%)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-muted)' }}>Medium Requests:</span>
-              <span className="mono" style={{ color: '#38bdf8' }}>{req.medium_requests}</span>
+              <span className="mono" style={{ color: '#38bdf8' }}>{req.medium_requests} ({medPct}%)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-muted)' }}>Large Requests:</span>
-              <span className="mono" style={{ color: '#a855f7' }}>{req.large_requests}</span>
+              <span className="mono" style={{ color: '#f59e0b' }}>{req.large_requests} ({largePct}%)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Escalated Requests:</span>
@@ -212,7 +266,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* SECTION 17: BASELINE COMPARISON DASHBOARD (AdaptiveRoute vs Baselines) */}
+      {/* BASELINE COMPARISON DASHBOARD (AdaptiveRoute vs Baselines) */}
       <div className="glass-panel" style={{ padding: '22px', marginBottom: '28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
@@ -282,17 +336,60 @@ export default function Dashboard() {
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: '1.6' }}>
-            <p style={{ fontWeight: 500, color: '#e2e8f0' }}>Benchmark not available.</p>
-            <p>Run benchmark to generate results.</p>
+            <p style={{ fontWeight: 500, color: '#e2e8f0' }}>Benchmark not available yet.</p>
+            <p>Click &quot;Run Benchmark Experiment&quot; above to measure all 5 policies.</p>
           </div>
         )}
       </div>
 
-      {/* Inferences Table */}
+      {/* Inferences Table with Search & Filter */}
       <div className="glass-panel" style={{ padding: '22px' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '14px', color: '#f8fafc' }}>
-          Recent Inferences Log (SQLite Audit Trail)
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#f8fafc' }}>
+            Recent Inferences Log (SQLite Audit Trail)
+          </h3>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Search Input */}
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={e => setSearchFilter(e.target.value)}
+                placeholder="Search prompt or model..."
+                style={{
+                  padding: '6px 12px 6px 30px',
+                  fontSize: '0.82rem',
+                  borderRadius: '8px',
+                  width: '200px',
+                }}
+              />
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            </div>
+
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {['ALL', 'ESCALATED'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTierFilter(t)}
+                  style={{
+                    background: tierFilter === t ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${tierFilter === t ? 'rgba(99, 102, 241, 0.4)' : 'var(--border)'}`,
+                    color: tierFilter === t ? '#fff' : 'var(--text-muted)',
+                    borderRadius: '6px',
+                    padding: '4px 10px',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
@@ -307,14 +404,14 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {inferences.length === 0 ? (
+              {filteredInferences.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No inferences logged yet.
+                  <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No inferences match current search filter.
                   </td>
                 </tr>
               ) : (
-                inferences.map((inf) => (
+                filteredInferences.map((inf) => (
                   <tr key={inf.request_id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                     <td style={{ padding: '10px 12px' }} className="mono">{inf.request_id}</td>
                     <td style={{ padding: '10px 12px', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -326,9 +423,13 @@ export default function Dashboard() {
                     <td style={{ padding: '10px 12px' }} className="mono">{inf.quality_score}</td>
                     <td style={{ padding: '10px 12px' }}>
                       {inf.escalated ? (
-                        <span style={{ color: '#f43f5e', fontWeight: 600 }}>Yes ({inf.escalation_count})</span>
+                        <span style={{ color: '#f43f5e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <ArrowUpRight size={12} /> Yes ({inf.escalation_count})
+                        </span>
                       ) : (
-                        <span style={{ color: '#10b981' }}>No</span>
+                        <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <CheckCircle2 size={12} /> No
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -341,4 +442,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

@@ -116,7 +116,7 @@ function TypewriterLine({ text, delay = 0 }) {
 }
 
 // ─── Hero 3D Floating Interactive Controls ────────────────────────────────────
-function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAutoEscalate }) {
+function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAutoEscalate, accentColor }) {
   return (
     <>
       {/* Floating Pill 1: Quality Threshold Slider (Top Center) */}
@@ -124,8 +124,8 @@ function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAu
         className="hero-pill hero-pill-1"
         style={{
           position: 'absolute',
-          top: '-32px',
-          right: '12%',
+          top: '-28px',
+          right: '8%',
           background: 'rgba(18, 18, 22, 0.85)',
           backdropFilter: 'blur(16px)',
           border: '1px solid rgba(255,255,255,0.12)',
@@ -140,7 +140,7 @@ function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAu
           cursor: 'pointer',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
           <span style={{ fontSize: '11px', color: '#71717a', fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em' }}>Threshold τ</span>
           <span style={{ fontSize: '15px', fontWeight: 600, color: '#4ade80', fontFamily: "'JetBrains Mono',monospace" }}>{tau.toFixed(2)}</span>
         </div>
@@ -164,7 +164,7 @@ function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAu
         className="hero-pill hero-pill-2"
         style={{
           position: 'absolute',
-          bottom: '8px',
+          bottom: '12px',
           left: '4%',
           background: 'rgba(18, 18, 22, 0.85)',
           backdropFilter: 'blur(16px)',
@@ -179,7 +179,7 @@ function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAu
           zIndex: 10,
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
           <span style={{ fontSize: '11px', color: '#71717a', fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em' }}>Weight</span>
           <span style={{ fontSize: '15px', fontWeight: 600, color: '#e4e4e7', fontFamily: "'JetBrains Mono',monospace" }}>{weight}</span>
         </div>
@@ -192,7 +192,7 @@ function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAu
           onChange={(e) => setWeight(parseInt(e.target.value, 10))}
           style={{
             width: '80px',
-            accentColor: '#818cf8',
+            accentColor: accentColor,
             cursor: 'ew-resize',
           }}
         />
@@ -203,7 +203,7 @@ function HeroFloatingPills({ tau, setTau, weight, setWeight, autoEscalate, setAu
         className="hero-pill hero-pill-3"
         style={{
           position: 'absolute',
-          bottom: '14px',
+          bottom: '16px',
           right: '6%',
           background: 'rgba(18, 18, 22, 0.85)',
           backdropFilter: 'blur(16px)',
@@ -354,6 +354,9 @@ function CylinderCarousel3D() {
     setIsDragging(false);
   };
 
+  const rotateLeft = () => setRotation(prev => prev + 60);
+  const rotateRight = () => setRotation(prev => prev - 60);
+
   const count = panels.length;
   const radius = 340; // 3D cylinder radius in px
 
@@ -372,8 +375,29 @@ function CylinderCarousel3D() {
         filter: 'blur(40px)',
       }} />
 
-      {/* Section label */}
-      <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+      {/* Section label & controls */}
+      <div style={{ textAlign: 'center', marginBottom: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '18px' }}>
+        <button
+          onClick={rotateLeft}
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#a1a1aa',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+        >
+          ‹
+        </button>
+
         <span style={{
           fontSize: '11px',
           fontFamily: "'JetBrains Mono',monospace",
@@ -381,8 +405,29 @@ function CylinderCarousel3D() {
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
         }}>
-          3D ENGINE SHOWCASE — DRAG TO ROTATE
+          3D ENGINE SHOWCASE — DRAG OR USE CONTROLS
         </span>
+
+        <button
+          onClick={rotateRight}
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#a1a1aa',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+        >
+          ›
+        </button>
       </div>
 
       {/* 3D Stage */}
@@ -472,7 +517,7 @@ function InteractivePlayground({ onEnterApp }) {
   const [policy, setPolicy] = useState('balanced');
   const [autoEscalate, setAutoEscalate] = useState(true);
   const [provider, setProvider] = useState('grok');
-  const [simState, setSimState] = useState('ready'); // ready, streaming, done
+  const [simState, setSimState] = useState('ready');
   const [outputTokens, setOutputTokens] = useState('');
 
   const demos = [
@@ -940,6 +985,170 @@ function AnimatedArchPipeline() {
   );
 }
 
+// ─── Section 4: DialKit-Style Controls Reference Grid (Sections 6, 7 & 8) ────
+function ControlsShowcase({ accentColor, setAccentColor }) {
+  const [toggleVal, setToggleVal] = useState(true);
+  const [sliderVal, setSliderVal] = useState(0.85);
+  const [selectVal, setSelectVal] = useState('cascade');
+  const [springVal, setSpringVal] = useState(0.65);
+  const [bounced, setBounced] = useState(false);
+
+  const colors = [
+    { label: 'Indigo', val: '#818cf8' },
+    { label: 'Emerald', val: '#4ade80' },
+    { label: 'Cyan', val: '#38bdf8' },
+    { label: 'Amber', val: '#f59e0b' },
+    { label: 'Rose', val: '#ec4899' },
+  ];
+
+  const triggerBounce = () => {
+    setBounced(true);
+    setTimeout(() => setBounced(false), 800);
+  };
+
+  return (
+    <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+        <span style={{ fontSize: '11px', fontFamily: "'JetBrains Mono',monospace", color: '#52525b', letterSpacing: '0.1em' }}>TACTILE COMPONENTS</span>
+        <h2 style={{ fontSize: '38px', fontWeight: 500, letterSpacing: '-0.025em', color: '#f4f4f5', margin: '12px 0 8px' }}>Control Reference</h2>
+        <p style={{ fontSize: '14px', color: '#71717a', maxWidth: '420px', margin: '0 auto' }}>
+          Interactive primitives built for developer tools. Click and slide to experience physical responsiveness.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="feat-grid">
+        {/* Control: Theme Color Accent Picker */}
+        <Card3D intensity={5}>
+          <div style={{ background: '#111114', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: '#e4e4e7' }}>Accent Color</span>
+                <div style={{ fontSize: '11px', color: '#71717a' }}>Changes page-wide theme glow</div>
+              </div>
+              <span style={{ fontSize: '11px', fontFamily: "'JetBrains Mono',monospace", color: accentColor }}>{accentColor}</span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {colors.map(c => (
+                <button
+                  key={c.val}
+                  onClick={() => setAccentColor(c.val)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 0',
+                    background: accentColor === c.val ? `${c.val}22` : '#09090b',
+                    border: `1px solid ${accentColor === c.val ? c.val : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.val }} />
+                  <span style={{ fontSize: '10px', fontFamily: "'JetBrains Mono',monospace", color: accentColor === c.val ? '#fff' : '#71717a' }}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card3D>
+
+        {/* Control: Toggle Primitive */}
+        <Card3D intensity={5}>
+          <div style={{ background: '#111114', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#e4e4e7' }}>Strict τ Fallback</span>
+              <div style={{ fontSize: '11px', color: '#71717a' }}>Escalate instantly when score &lt; 0.82</div>
+            </div>
+            <button
+              onClick={() => setToggleVal(!toggleVal)}
+              style={{
+                background: toggleVal ? `${accentColor}22` : '#09090b',
+                border: `1px solid ${toggleVal ? accentColor : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '20px',
+                padding: '4px 14px',
+                fontSize: '12px',
+                fontFamily: "'JetBrains Mono',monospace",
+                color: toggleVal ? '#fff' : '#71717a',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              {toggleVal ? 'Enabled ✓' : 'Disabled'}
+            </button>
+          </div>
+        </Card3D>
+
+        {/* Control: Slider Primitive */}
+        <Card3D intensity={5}>
+          <div style={{ background: '#111114', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#e4e4e7' }}>Inference Confidence Floor</span>
+              <span style={{ fontSize: '12px', fontFamily: "'JetBrains Mono',monospace", color: '#4ade80' }}>{sliderVal.toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min="0.50"
+              max="1.00"
+              step="0.01"
+              value={sliderVal}
+              onChange={(e) => setSliderVal(parseFloat(e.target.value))}
+              style={{ width: '100%', accentColor: '#4ade80', cursor: 'ew-resize' }}
+            />
+          </div>
+        </Card3D>
+
+        {/* Control: Spring Physics Test */}
+        <Card3D intensity={5}>
+          <div style={{ background: '#111114', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#e4e4e7' }}>Transition Physics</span>
+              <button
+                onClick={triggerBounce}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '6px',
+                  padding: '3px 8px',
+                  fontSize: '11px',
+                  color: '#a1a1aa',
+                  cursor: 'pointer',
+                }}
+              >
+                Trigger Test
+              </button>
+            </div>
+            <div style={{
+              height: '32px',
+              background: '#09090b',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.06)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 8px',
+            }}>
+              <div
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: accentColor,
+                  boxShadow: `0 0 12px ${accentColor}`,
+                  transform: bounced ? 'translateX(260px) scale(1.2)' : 'translateX(0px) scale(1)',
+                  transition: 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}
+              />
+            </div>
+          </div>
+        </Card3D>
+      </div>
+    </div>
+  );
+}
+
 // ─── Interactive Routing Demo (Preserved & Enhanced) ─────────────────────────
 function RoutingDemo() {
   const [state, setState] = useState('idle');
@@ -1105,68 +1314,6 @@ function RoutingDemo() {
   );
 }
 
-// ─── Interactive Model Router Viz ─────────────────────────────────────────────
-function RouterViz() {
-  const [selectedTier, setSelectedTier] = useState(null);
-  const [animStep, setAnimStep] = useState(0);
-
-  const tiers = [
-    { id: 'SMALL', latency: '~140ms', color: '#4ade80' },
-    { id: 'MEDIUM', latency: '~280ms', color: '#38bdf8' },
-    { id: 'LARGE', latency: '~540ms', color: '#f59e0b' },
-  ];
-
-  function simulate(tier) {
-    setSelectedTier(null);
-    setAnimStep(1);
-    setTimeout(() => setAnimStep(2), 500);
-    setTimeout(() => { setAnimStep(3); setSelectedTier(tier.id); }, 1100);
-  }
-
-  const cellStyle = (active, color) => ({
-    textAlign: 'center', padding: '11px 8px',
-    background: active ? `${color}14` : '#0f0f11',
-    border: `1px solid ${active ? color + '45' : 'rgba(255,255,255,0.07)'}`,
-    borderRadius: '8px', color: active ? color : '#52525b',
-    fontFamily: "'JetBrains Mono',monospace", fontSize: '12px', letterSpacing: '0.04em',
-    transition: 'all 0.3s ease',
-  });
-
-  return (
-    <Card3D intensity={5}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', maxWidth: '480px', margin: '0 auto', background: '#111114', padding: '30px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={cellStyle(false, '#818cf8')}>PROMPT INPUT</div>
-        <div style={{ color: '#3f3f46', fontSize: '18px' }}>↓</div>
-        <div style={cellStyle(animStep === 1, '#818cf8')}>{animStep === 1 ? '⚡ EXTRACTING FEATURES…' : 'PROMPT ANALYZER'}</div>
-        <div style={{ color: '#3f3f46', fontSize: '18px' }}>↓</div>
-        <div style={cellStyle(animStep === 2, '#818cf8')}>{animStep === 2 ? '🔀 COMPUTING UTILITY…' : 'ML ROUTER'}</div>
-        <div style={{ color: '#3f3f46', fontSize: '18px' }}>↓</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', width: '100%' }}>
-          {tiers.map(t => (
-            <button key={t.id} onClick={() => simulate(t)}
-              style={{
-                ...cellStyle(selectedTier === t.id, t.color),
-                cursor: 'pointer', border: `1px solid ${selectedTier === t.id ? t.color + '60' : 'rgba(255,255,255,0.08)'}`,
-              }}
-              onMouseEnter={e => { if (selectedTier !== t.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-              onMouseLeave={e => { if (selectedTier !== t.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-            >
-              <div style={{ marginBottom: '3px', fontWeight: 600 }}>{t.id}</div>
-              <div style={{ fontSize: '10px', color: '#52525b' }}>{t.latency}</div>
-            </button>
-          ))}
-        </div>
-        {selectedTier
-          ? <div style={{ textAlign: 'center', padding: '11px 20px', width: '100%', background: `${TIER_COLORS[selectedTier]}0c`, border: `1px solid ${TIER_COLORS[selectedTier]}35`, borderRadius: '8px', color: TIER_COLORS[selectedTier], fontSize: '12px', fontFamily: "'JetBrains Mono',monospace", marginTop: '8px' }}>
-              ✓ {selectedTier} SELECTED — INFERENCE DISPATCHED
-            </div>
-          : <div style={{ fontSize: '12px', color: '#52525b', fontFamily: "'JetBrains Mono',monospace", marginTop: '8px' }}>Click a tier above to simulate routing path</div>
-        }
-      </div>
-    </Card3D>
-  );
-}
-
 // ─── Code Block ───────────────────────────────────────────────────────────────
 function CodeBlock({ code, lang = 'bash' }) {
   const [copied, setCopied] = useState(false);
@@ -1264,7 +1411,7 @@ function Nav({ onEnterApp }) {
       </a>
 
       <div id="nav-links" style={{ display: 'flex', gap: '26px' }}>
-        {['Product', 'Showcase', 'Playground', 'Architecture', 'Docs'].map(l => (
+        {['Product', 'Showcase', 'Playground', 'Components', 'Architecture'].map(l => (
           <a key={l} href={`#${l.toLowerCase()}`} style={{ color: '#71717a', fontSize: '14px', textDecoration: 'none', transition: 'color 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.color = '#e4e4e7'}
             onMouseLeave={e => e.currentTarget.style.color = '#71717a'}
@@ -1285,7 +1432,7 @@ function Nav({ onEnterApp }) {
         }}
           onMouseEnter={e => e.currentTarget.style.opacity = '0.86'}
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >Try it</button>
+        >Launch Gateway</button>
       </div>
     </nav>
   );
@@ -1318,6 +1465,9 @@ export default function Landing({ onEnterApp }) {
   const W = 920; // max content width
   const pad = '0 24px';
 
+  // Dynamic Theme Accent Color (changes glowing effects across the page!)
+  const [accentColor, setAccentColor] = useState('#818cf8');
+
   // Hero state
   const [heroTau, setHeroTau] = useState(0.82);
   const [heroWeight, setHeroWeight] = useState(450);
@@ -1344,6 +1494,10 @@ export default function Landing({ onEnterApp }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap');
         
+        :root {
+          --accent-primary: ${accentColor};
+        }
+
         @keyframes floatPill1 {
           0%, 100% { transform: perspective(800px) rotateX(-6deg) rotateY(10deg) translateY(0px); }
           50% { transform: perspective(800px) rotateX(-4deg) rotateY(8deg) translateY(-8px); }
@@ -1362,7 +1516,7 @@ export default function Landing({ onEnterApp }) {
         }
         @keyframes ambientGlow {
           0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.12; }
-          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.20; }
+          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.22; }
         }
 
         .hero-pill-1 { animation: floatPill1 5s ease-in-out infinite; }
@@ -1409,11 +1563,12 @@ export default function Landing({ onEnterApp }) {
           left: '50%',
           width: '560px',
           height: '360px',
-          background: 'radial-gradient(circle, #818cf8 0%, rgba(9,9,11,0) 70%)',
+          background: `radial-gradient(circle, ${accentColor} 0%, rgba(9,9,11,0) 70%)`,
           pointerEvents: 'none',
           filter: 'blur(70px)',
           animation: 'ambientGlow 8s ease-in-out infinite',
           zIndex: 0,
+          transition: 'background 0.5s ease',
         }} />
 
         {/* 3D Tilt Wrapper */}
@@ -1452,6 +1607,7 @@ export default function Landing({ onEnterApp }) {
             setWeight={setHeroWeight}
             autoEscalate={heroAutoEscalate}
             setAutoEscalate={setHeroAutoEscalate}
+            accentColor={accentColor}
           />
 
           <h1 className="hero-h1" style={{ fontSize: '72px', fontWeight: 500, lineHeight: 1.05, letterSpacing: '-0.04em', color: '#fff', marginBottom: '24px' }}>
@@ -1487,6 +1643,13 @@ export default function Landing({ onEnterApp }) {
       <section id="playground" style={{ padding: pad, paddingBottom: '140px' }}>
         <FadeIn>
           <InteractivePlayground onEnterApp={onEnterApp} />
+        </FadeIn>
+      </section>
+
+      {/* ── DIALKIT CONTROL PRIMITIVES REFERENCE (SECTIONS 6, 7 & 8) ─────── */}
+      <section id="components" style={{ padding: pad, paddingBottom: '140px' }}>
+        <FadeIn>
+          <ControlsShowcase accentColor={accentColor} setAccentColor={setAccentColor} />
         </FadeIn>
       </section>
 
@@ -1564,14 +1727,6 @@ export default function Landing({ onEnterApp }) {
         <FadeIn>
           <SectionHead eyebrow="FLOW" title="Interactive Pipeline" sub="Watch how requests travel through telemetry, classification, and quality cascading." />
           <AnimatedArchPipeline />
-        </FadeIn>
-      </section>
-
-      {/* ── INTERACTIVE ROUTER TIER SIMULATOR ───────────────────────────────── */}
-      <section style={{ padding: pad, paddingBottom: '140px', maxWidth: '680px', margin: '0 auto' }}>
-        <FadeIn>
-          <SectionHead eyebrow="INTERACTIVE" title="Model Router." sub="Click a tier to simulate how AdaptiveRoute routes to the appropriate model." />
-          <RouterViz />
         </FadeIn>
       </section>
 

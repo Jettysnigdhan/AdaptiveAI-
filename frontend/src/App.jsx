@@ -23,7 +23,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} health={health} />
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} health={health} onReturnToLanding={() => setView('landing')} />
       <main style={{ flex: 1 }}>
         {activeTab === 'chat' && <Chat />}
         {activeTab === 'dashboard' && <Dashboard />}

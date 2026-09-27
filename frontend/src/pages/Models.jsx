@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, CheckCircle2, XCircle, Zap, Shield, Hash, RefreshCw } from 'lucide-react';
+import { Layers, CheckCircle2, XCircle, Zap, Shield, Hash, RefreshCw, Search, Filter } from 'lucide-react';
 import { fetchModels, toggleModel } from '../services/api';
 
 export default function Models() {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [providerFilter, setProviderFilter] = useState('ALL');
+  const [tierFilter, setTierFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadModels = async () => {
     try {
       const data = await fetchModels(false);
-      setModels(data);
+      setModels(data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -38,6 +41,25 @@ export default function Models() {
     return 'badge-tier-large';
   };
 
+  const providers = ['ALL', 'grok', 'groq', 'openai', 'anthropic', 'local'];
+
+  const filteredModels = models.filter(m => {
+    if (providerFilter !== 'ALL' && (m.provider || '').toLowerCase() !== providerFilter.toLowerCase()) {
+      return false;
+    }
+    if (tierFilter !== 'ALL' && (m.tier || '').toLowerCase() !== tierFilter.toLowerCase()) {
+      return false;
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchName = (m.model_name || '').toLowerCase().includes(q);
+      const matchDesc = (m.description || '').toLowerCase().includes(q);
+      const matchCap = (m.capabilities || []).some(c => c.toLowerCase().includes(q));
+      if (!matchName && !matchDesc && !matchCap) return false;
+    }
+    return true;
+  });
+
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '30px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
@@ -62,21 +84,85 @@ export default function Models() {
             alignItems: 'center',
             gap: '6px',
             cursor: 'pointer',
-            fontSize: '0.85rem'
+            fontSize: '0.85rem',
+            transition: 'all 0.15s',
           }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-sub)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
         >
           <RefreshCw size={14} />
           <span>Refresh Catalog</span>
         </button>
       </div>
 
+      {/* Filter and Search Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '12px' }}>
+        {/* Provider Filters */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {providers.map(p => (
+            <button
+              key={p}
+              onClick={() => setProviderFilter(p)}
+              style={{
+                background: providerFilter === p ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${providerFilter === p ? 'rgba(99, 102, 241, 0.4)' : 'var(--border)'}`,
+                color: providerFilter === p ? '#fff' : 'var(--text-muted)',
+                borderRadius: '8px',
+                padding: '5px 12px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                fontFamily: "'JetBrains Mono',monospace",
+                transition: 'all 0.15s',
+              }}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+
+        {/* Tier Filter & Search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <select
+            value={tierFilter}
+            onChange={e => setTierFilter(e.target.value)}
+            style={{ padding: '6px 12px', fontSize: '0.82rem', borderRadius: '8px' }}
+          >
+            <option value="ALL">All Tiers</option>
+            <option value="small">Small Tier</option>
+            <option value="medium">Medium Tier</option>
+            <option value="large">Large Tier</option>
+          </select>
+
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search model or capability..."
+              style={{
+                padding: '6px 12px 6px 30px',
+                fontSize: '0.82rem',
+                borderRadius: '8px',
+                width: '180px',
+              }}
+            />
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>
           Loading registered models...
         </div>
+      ) : filteredModels.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>
+          No models match the selected filter.
+        </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-          {models.map((model) => (
+          {filteredModels.map((model) => (
             <div key={model.model_name} className="glass-panel" style={{ padding: '22px', position: 'relative' }}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
@@ -129,7 +215,7 @@ export default function Models() {
 
               {/* Capabilities */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '18px' }}>
-                {model.capabilities.map((cap) => (
+                {(model.capabilities || []).map((cap) => (
                   <span
                     key={cap}
                     style={{

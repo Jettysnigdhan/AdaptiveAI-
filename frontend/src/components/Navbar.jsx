@@ -1,7 +1,7 @@
 import React from 'react';
 import { Cpu, BarChart2, Layers, Zap } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, health }) {
+export default function Navbar({ activeTab, setActiveTab, health, onReturnToLanding }) {
   const providerLabel = health?.active_provider ? health.active_provider.toUpperCase() : 'CLOUD API';
 
   return (
@@ -22,7 +22,11 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
         justifyContent: 'space-between'
       }}>
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div
+          onClick={onReturnToLanding}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+          title="Return to Landing Page"
+        >
           <div style={{
             width: '38px',
             height: '38px',
@@ -61,6 +65,13 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
 
         {/* Navigation Tabs */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={onReturnToLanding}
+            className="nav-link"
+            style={{ color: '#818cf8', borderColor: 'rgba(129, 140, 248, 0.2)' }}
+          >
+            <span>← Landing</span>
+          </button>
           <button
             onClick={() => setActiveTab('chat')}
             className={`nav-link ${activeTab === 'chat' ? 'active' : ''}`}
