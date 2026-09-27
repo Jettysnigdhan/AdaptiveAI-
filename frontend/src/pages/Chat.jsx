@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Sliders, RefreshCw, AlertCircle, Bot, User, Copy, Check, Trash2, Download, Zap, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import { sendOpenAIChat } from '../services/api';
 import RoutingDetailsDrawer from '../components/RoutingInfo/RoutingDetailsDrawer';
+import SleekZap from '../components/SleekZap';
 
 const PRESET_PROMPTS = [
-  { label: '⚡ Test Downscale: 3*4', text: '3*4', tag: 'SMALL', desc: 'Auto-downscale from Claude 3.5 Sonnet to Small tier (~200ms, -90% cost)' },
+  { label: 'Test Downscale: 3*4', text: '3*4', tag: 'SMALL', isDownscale: true, desc: 'Auto-downscale from Claude 3.5 Sonnet to Small tier (~200ms, -90% cost)' },
   { label: 'Coding (Medium Tier)', text: 'Write a Python function to check for balanced parentheses using a stack.', tag: 'MEDIUM', desc: 'Standard code synthesis' },
   { label: 'Architecture (Large Tier)', text: 'Architect a high-performance distributed streaming engine with Raft consensus and Byzantine fault tolerance in Rust.', tag: 'LARGE', desc: 'Preserves Large Flagship Tier' },
 ];
@@ -256,6 +257,7 @@ export default function Chat() {
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = idx === 0 ? '#4ade80' : '#818cf8'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = idx === 0 ? 'rgba(74, 222, 128, 0.35)' : 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.transform = 'none'; }}
           >
+            {p.isDownscale && <SleekZap size={13} variant="emerald" />}
             <span>{p.label}</span>
           </button>
         ))}
@@ -370,8 +372,8 @@ export default function Chat() {
                     gap: '4px',
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#4ade80', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Zap size={13} /> DOWNSCALED BY PROMPT SEMANTICS (-90% Cost)
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#4ade80', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <SleekZap size={14} variant="emerald" /> DOWNSCALED BY PROMPT SEMANTICS (-90% Cost)
                       </span>
                       <span style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: "'JetBrains Mono',monospace" }}>
                         {msg.metadata.latency_ms?.toFixed(0)}ms

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, Terminal, ExternalLink, Zap, Code, Cpu, ArrowRight, X } from 'lucide-react';
+import SleekZap from './SleekZap';
 
 export default function LocalSetupModal({ isOpen, onClose, onEnterApp }) {
   const [activeTab, setActiveTab] = useState('quickstart'); // 'quickstart' | 'extension' | 'claude' | 'docker'
@@ -138,10 +139,10 @@ export default function LocalSetupModal({ isOpen, onClose, onEnterApp }) {
           background: '#09090b',
         }}>
           {[
-            { id: 'quickstart', label: '⚡ Python Quickstart', icon: Terminal },
-            { id: 'extension', label: '🔌 VS Code / Cursor Extension', icon: Code },
-            { id: 'claude', label: '💬 Claude CLI & SDK', icon: Cpu },
-            { id: 'docker', label: '🐳 Docker Compose', icon: Zap },
+            { id: 'quickstart', label: 'Python Quickstart', icon: SleekZap },
+            { id: 'extension', label: 'VS Code / Cursor Extension', icon: Code },
+            { id: 'claude', label: 'Claude CLI & SDK', icon: Cpu },
+            { id: 'docker', label: 'Docker Compose', icon: Zap },
           ].map(tab => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;

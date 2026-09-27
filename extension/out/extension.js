@@ -293,7 +293,18 @@ var AdaptiveRouteChatViewProvider = class {
     <div id="routingBanner" class="routing-banner hidden">
       <div class="routing-banner-header">
         <span class="routing-chip" id="tierChip">SMALL</span>
-        <span class="downscaled-chip" id="downscaledChip">\u26A1 Downscaled (-90% cost)</span>
+        <span class="downscaled-chip" id="downscaledChip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="url(#boltGradSmall)" stroke="#4ade80" stroke-width="1.2" style="display:inline-block;vertical-align:middle;margin-right:4px;filter:drop-shadow(0 0 4px rgba(74,222,128,0.6));">
+            <defs>
+              <linearGradient id="boltGradSmall" x1="4" y1="2" x2="20" y2="22">
+                <stop stop-color="#4ade80"/>
+                <stop offset="1" stop-color="#10b981"/>
+              </linearGradient>
+            </defs>
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
+          </svg>
+          Downscaled (-90% cost)
+        </span>
       </div>
       <div class="routing-banner-details">
         <div class="detail-row">
@@ -313,11 +324,27 @@ var AdaptiveRouteChatViewProvider = class {
     <!-- Chat Messages Scroll Area -->
     <div id="chatMessages" class="chat-messages">
       <div class="welcome-card">
-        <div class="welcome-icon">\u26A1</div>
+        <div class="welcome-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="url(#boltGradLarge)" stroke="#00F0FF" stroke-width="1.2" style="filter:drop-shadow(0 0 8px rgba(0,240,255,0.7));">
+            <defs>
+              <linearGradient id="boltGradLarge" x1="4" y1="2" x2="20" y2="22">
+                <stop stop-color="#00F0FF"/>
+                <stop offset="0.5" stop-color="#818cf8"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
+          </svg>
+        </div>
         <h3>Adaptive LLM Routing</h3>
         <p>Your client requests higher models by default (e.g. <b>Claude 3.5 Sonnet</b>). AdaptiveRoute inspects prompt semantics and automatically downscales low-complexity queries to fast, lightweight models.</p>
         <div class="quick-chips">
-          <button class="chip-btn" data-prompt="3*4">\u26A1 Test Downscale: 3*4</button>
+          <button class="chip-btn" data-prompt="3*4">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#4ade80" stroke="#4ade80" stroke-width="1" style="display:inline-block;vertical-align:middle;margin-right:4px;">
+              <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
+            </svg>
+            Test Downscale: 3*4
+          </button>
           <button class="chip-btn" data-prompt="Explain quicksort in Python with code">Medium Tier: Quicksort</button>
           <button class="chip-btn" data-prompt="Architect a multi-region Kafka streaming cluster with Raft consensus and failover in Rust">Large Tier: Kafka Raft</button>
         </div>

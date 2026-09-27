@@ -1,5 +1,6 @@
 import React from 'react';
-import { Cpu, BarChart2, Layers, Zap } from 'lucide-react';
+import { Cpu, BarChart2, Layers } from 'lucide-react';
+import SleekZap from './SleekZap';
 
 export default function Navbar({ activeTab, setActiveTab, health, onReturnToLanding }) {
   const providerLabel = health?.active_provider ? health.active_provider.toUpperCase() : 'CLOUD API';
@@ -30,14 +31,23 @@ export default function Navbar({ activeTab, setActiveTab, health, onReturnToLand
           <div style={{
             width: '38px',
             height: '38px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+            borderRadius: '11px',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%)',
+            border: '1px solid rgba(129, 140, 248, 0.35)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)'
+            boxShadow: '0 0 20px rgba(99, 102, 241, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.25)',
+            position: 'relative',
+            overflow: 'hidden',
           }}>
-            <Zap size={20} color="#fff" />
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.25), transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+            <SleekZap size={20} variant="cyan" glow={true} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

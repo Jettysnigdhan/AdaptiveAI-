@@ -213,7 +213,7 @@
 
         if (message.isDownscaled) {
           downscaledChip.style.display = "inline-flex";
-          downscaledChip.innerHTML = "⚡ Downscaled <span>(-90% cost)</span>";
+          downscaledChip.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="url(#boltGradSmall)" stroke="#4ade80" stroke-width="1.2" style="display:inline-block;vertical-align:middle;margin-right:4px;"><defs><linearGradient id="boltGradSmall" x1="4" y1="2" x2="20" y2="22"><stop stop-color="#4ade80"/><stop offset="1" stop-color="#10b981"/></linearGradient></defs><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>Downscaled <span>(-90% cost)</span>`;
         } else {
           downscaledChip.style.display = "inline-flex";
           downscaledChip.style.color = "#FF007A";

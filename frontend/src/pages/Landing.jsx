@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import LocalSetupModal from '../components/LocalSetupModal';
+import SleekZap from '../components/SleekZap';
 
 // ─── Tier Color Map ───────────────────────────────────────────────────────────
 const TIER_COLORS = { SMALL: '#4ade80', MEDIUM: '#38bdf8', LARGE: '#f59e0b' };
@@ -523,7 +524,8 @@ function InteractivePlayground({ onEnterApp, onTryNow }) {
 
   const demos = [
     {
-      title: '⚡ Test Downscale: 3*4',
+      title: 'Test Downscale: 3*4',
+      isDownscale: true,
       prompt: '3*4',
       tier: 'SMALL',
       model: 'gpt-oss-20b / grok-2-mini',
@@ -626,9 +628,13 @@ function InteractivePlayground({ onEnterApp, onTryNow }) {
                       cursor: 'pointer',
                       transition: 'all 0.15s',
                       fontFamily: 'inherit',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
                     }}
                   >
-                    {d.title}
+                    {d.isDownscale && <SleekZap size={12} variant="emerald" />}
+                    <span>{d.title}</span>
                   </button>
                 ))}
               </div>
@@ -706,7 +712,9 @@ function InteractivePlayground({ onEnterApp, onTryNow }) {
                 alignItems: 'center',
                 fontSize: '11px',
               }}>
-                <span style={{ color: '#4ade80', fontWeight: 600 }}>⚡ Auto-Downscaled: Claude 3.5 Sonnet ➔ Small Tier</span>
+                <span style={{ color: '#4ade80', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <SleekZap size={13} variant="emerald" /> Auto-Downscaled: Claude 3.5 Sonnet ➔ Small Tier
+                </span>
                 <span style={{ color: '#a1a1aa', fontFamily: "'JetBrains Mono',monospace" }}>-92% tokens saved</span>
               </div>
             )}
@@ -1462,8 +1470,20 @@ function Nav({ onEnterApp, onTryNow }) {
       backdropFilter: scrolled ? 'blur(20px)' : 'none',
       transition: 'all 0.3s ease',
     }}>
-      <a href="#top" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: 22, height: 22, background: 'linear-gradient(135deg,#818cf8,#a78bfa)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#fff' }}>A</div>
+      <a href="#top" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          width: 26,
+          height: 26,
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(168,85,247,0.25))',
+          border: '1px solid rgba(129,140,248,0.4)',
+          borderRadius: '7px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 0 12px rgba(99,102,241,0.35)',
+        }}>
+          <SleekZap size={14} variant="cyan" glow={true} />
+        </div>
         <span style={{ fontSize: '14px', fontWeight: 500, color: '#e4e4e7', letterSpacing: '-0.01em' }}>AdaptiveRoute</span>
       </a>
 
@@ -1909,7 +1929,19 @@ print(response.choices[0].message.content)`} />
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '26px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: 18, height: 18, background: 'linear-gradient(135deg,#818cf8,#a78bfa)', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: '#fff' }}>A</div>
+          <div style={{
+            width: 22,
+            height: 22,
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2))',
+            border: '1px solid rgba(129,140,248,0.3)',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 10px rgba(99,102,241,0.25)',
+          }}>
+            <SleekZap size={12} variant="cyan" glow={true} />
+          </div>
           <span style={{ fontSize: '13px', color: '#52525b' }}>AdaptiveRoute</span>
         </div>
         <div style={{ display: 'flex', gap: '20px' }}>
