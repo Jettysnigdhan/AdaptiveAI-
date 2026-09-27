@@ -79,8 +79,7 @@ class AnthropicProvider(BaseModelProvider):
             "temperature": request.temperature,
             "messages": [{"role": "user", "content": request.prompt}],
         }
-        if request.system_prompt:
-            payload["system"] = request.system_prompt
+        payload["system"] = request.system_prompt or "You are AdaptiveRoute AI, a helpful, precise assistant. Always respond in English unless the user explicitly requests another language."
 
         start_time = time.perf_counter()
         resp = await client.post("/messages", json=payload)
@@ -136,8 +135,7 @@ class AnthropicProvider(BaseModelProvider):
             "stream": True,
             "messages": [{"role": "user", "content": request.prompt}],
         }
-        if request.system_prompt:
-            payload["system"] = request.system_prompt
+        payload["system"] = request.system_prompt or "You are AdaptiveRoute AI, a helpful, precise assistant. Always respond in English unless the user explicitly requests another language."
 
         async with client.stream("POST", "/messages", json=payload) as response:
             if response.status_code != 200:

@@ -526,7 +526,7 @@ function InteractivePlayground({ onEnterApp, onTryNow }) {
       title: '⚡ Test Downscale: 3*4',
       prompt: '3*4',
       tier: 'SMALL',
-      model: 'allam-2-7b / grok-2-mini',
+      model: 'gpt-oss-20b / grok-2-mini',
       requestedModel: 'Claude 3.5 Sonnet',
       downscaled: true,
       latency: '206ms',
@@ -1842,7 +1842,7 @@ print(response.choices[0].message.content)`} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
               ['Grok / xAI  (grok-2-mini, grok-2)', 'active'],
-              ['Groq LPU  (allam-2-7b, qwen3.8-27b, gpt-oss-120b)', 'active'],
+              ['Groq LPU  (gpt-oss-20b, qwen3.8-27b, gpt-oss-120b)', 'active'],
               ['OpenAI  (gpt-4o-mini, gpt-4o)', 'adapter available'],
               ['Anthropic  (claude-3-5-haiku, claude-3-5-sonnet)', 'adapter available'],
               ['Local / Ollama  (offline, zero-egress)', 'adapter available'],

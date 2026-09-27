@@ -94,6 +94,8 @@ class OpenAICompatibleProvider(BaseModelProvider):
         messages = []
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
+        else:
+            messages.append({"role": "system", "content": "You are AdaptiveRoute AI, a helpful, precise assistant. Always respond in English unless the user explicitly requests another language."})
         messages.append({"role": "user", "content": request.prompt})
 
         payload: Dict[str, Any] = {
@@ -197,6 +199,8 @@ class OpenAICompatibleProvider(BaseModelProvider):
         messages = []
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
+        else:
+            messages.append({"role": "system", "content": "You are AdaptiveRoute AI, a helpful, precise assistant. Always respond in English unless the user explicitly requests another language."})
         messages.append({"role": "user", "content": request.prompt})
 
         payload: Dict[str, Any] = {

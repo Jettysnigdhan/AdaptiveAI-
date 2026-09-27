@@ -59,7 +59,7 @@ If you want to edit the extension code and test live:
    - Type `3*4` and press Enter.
    - **Watch the Live Telemetry Banner**:
      - Client Requested: `claude-3-5-sonnet`
-     - Routed To: `[SMALL] allam-2-7b` (or `grok-2-mini` / `claude-3-5-haiku`)
+     - Routed To: `[SMALL] gpt-oss-20b` (or `grok-2-mini` / `claude-3-5-haiku`)
      - Badge: `⚡ Downscaled (-90% cost, 206ms)`
      - Result: `12`
 5. **Test Flagship Retention**:

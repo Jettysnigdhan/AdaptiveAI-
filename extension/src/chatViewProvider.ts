@@ -297,7 +297,7 @@ export class AdaptiveRouteChatViewProvider implements vscode.WebviewViewProvider
         </div>
         <div class="detail-row">
           <span class="detail-label">Routed To:</span>
-          <span class="detail-val highlight" id="routedModelText">allam-2-7b</span>
+          <span class="detail-val highlight" id="routedModelText">gpt-oss-20b</span>
         </div>
         <div class="detail-row reason" id="routingReasonText">
           Simple arithmetic / low complexity query operates with high accuracy on Small tier.

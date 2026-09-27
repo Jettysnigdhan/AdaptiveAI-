@@ -75,8 +75,7 @@ class OllamaProvider(BaseModelProvider):
         if request.max_tokens:
             payload["options"]["num_predict"] = request.max_tokens
 
-        if request.system_prompt:
-            payload["system"] = request.system_prompt
+        payload["system"] = request.system_prompt or "You are AdaptiveRoute AI, a helpful, precise assistant. Always respond in English unless the user explicitly requests another language."
 
         start_time = time.perf_counter()
         try:
