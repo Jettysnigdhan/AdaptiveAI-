@@ -3,9 +3,11 @@ import Navbar from './components/Navbar';
 import Chat from './pages/Chat';
 import Dashboard from './pages/Dashboard';
 import Models from './pages/Models';
+import Landing from './pages/Landing';
 import { fetchHealth } from './services/api';
 
 export default function App() {
+  const [view, setView] = useState('landing'); // 'landing' | 'app'
   const [activeTab, setActiveTab] = useState('chat');
   const [health, setHealth] = useState(null);
 
@@ -14,6 +16,10 @@ export default function App() {
       .then(setHealth)
       .catch((err) => console.warn('Could not contact gateway:', err));
   }, []);
+
+  if (view === 'landing') {
+    return <Landing onEnterApp={() => setView('app')} />;
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

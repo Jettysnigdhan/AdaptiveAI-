@@ -1,198 +1,168 @@
-# AdaptiveRoute 🚀
-### ML-Based Dynamic LLM Routing & Cascading Gateway
+# AdaptiveRoute V2 🚀
+### Machine-Learning-Based LLM Routing & Quality-Aware Cascading Gateway
 
-AdaptiveRoute is an intelligent LLM gateway that automatically determines the minimum-capability language model required to answer a user's prompt satisfactorily without requiring manual model selection or paid subscriptions.
+> **AdaptiveRoute is designed to measure whether adaptive routing can reduce latency and model usage while maintaining a configurable quality threshold. Results are generated from reproducible local benchmarks.**
+
+AdaptiveRoute is an OpenAI-compatible proxy gateway that transforms fixed rule-based routing into an empirical, machine-learning-driven routing and automated escalation system.
 
 ```mermaid
 graph TD
-    User([User / Client]) --> Gateway[FastAPI Gateway /v1/chat]
-    Gateway --> Analyzer[Prompt Analyzer]
-    
+    Client(["Antigravity / Cursor / VS Code / Claude Clients"]) -->|POST /v1/chat/completions| Gateway["FastAPI Gateway (/v1/chat/completions)"]
+    Gateway --> Analyzer["Prompt Analyzer"]
+
     subgraph Feature Extraction
-        Analyzer --> Embeddings["Dense Semantic Embeddings (all-MiniLM-L6-v2)"]
-        Analyzer --> Signals["Domain Signals (Code, Math, Reasoning, Complexity)"]
+        Analyzer --> DenseEmbed["Dense Semantic Embeddings (all-MiniLM-L6-v2)"]
+        Analyzer --> StructFeat["Structural Features (Length, Tokens, Instructions, Code, Language, Constraints)"]
+        Analyzer --> TaskSignals["15 Task Signals (QA, Code, Debugging, Math, Reasoning, Arch, DB, Frontend, etc.)"]
     end
-    
-    Embeddings --> MLRouter[ML Router]
-    Signals --> MLRouter
-    
-    subgraph Routing Engine
-        MLRouter --> Policy{"Utility Optimizer / ML Classifier"}
-        Policy -->|"Low Complexity (~100ms)"| Small["Small Tier (7B / 0.5B)"]
-        Policy -->|"Moderate Complexity (~170ms)"| Medium["Medium Tier (27B / 1.5B)"]
-        Policy -->|"High Complexity (~800ms)"| Large["Large Tier (120B / 8B)"]
+
+    DenseEmbed --> MLRouter["ML Router (Utility Optimizer)"]
+    StructFeat --> MLRouter
+    TaskSignals --> MLRouter
+
+    subgraph Routing Decision
+        MLRouter --> Policies{"Routing Policy"}
+        Policies -->|"AUTO Mode"| PredScore["Predict P(Quality | Tier)"]
+        PredScore -->|"Select Min Sufficient"| Small["Small Tier Model"]
+        Policies -->|"RULE Mode"| RuleRoute["Rule-Based Fallback"]
+        Policies -->|"FIXED Mode"| FixedTier["Configured Fixed Tier"]
     end
-    
-    Small --> Evaluator[Quality Evaluator]
-    Medium --> Evaluator
-    Large --> Evaluator
-    
+
+    Small --> QualityEval["Quality / Confidence Evaluator"]
+
     subgraph Cascading Controller
-        Evaluator --> Check{"Score >= Threshold (0.82)?"}
-        Check -->|PASS| Return[Return Response to User]
-        Check -->|FAIL| Escalate[Escalate to Next Tier]
-        Escalate --> Medium
-        Escalate --> Large
+        QualityEval --> Check{"Score >= Threshold (0.82)?"}
+        Check -->|"PASS"| ReturnResp["Return Response to Client"]
+        Check -->|"FAIL"| Escalate1["Escalate -> Medium Tier"]
+        Escalate1 --> QualityEval2["Quality Evaluator"]
+        QualityEval2 --> Check2{"Score >= Threshold?"}
+        Check2 -->|"PASS"| ReturnResp
+        Check2 -->|"FAIL"| Escalate2["Escalate -> Large Tier"]
+        Escalate2 --> ReturnResp
     end
-    
-    Return --> Audit[(SQLite Telemetry & Audit)]
-    Return --> User
+
+    ReturnResp --> TelemetryHeaders["Attach X-Adaptive Telemetry Headers"]
+    TelemetryHeaders --> Client
 ```
 
 ---
 
-## 1. Project Overview
-Large Language Models (LLMs) differ exponentially in latency, token throughput, and compute usage. While a 120-billion parameter model is required for advanced reasoning and formal proofs, simple queries (such as factual questions, basic extraction, or straightforward syntax definitions) can be answered with identical user satisfaction by lightweight models. 
+## 1. Core Principles
 
-AdaptiveRoute acts as an intelligent intermediary gateway: it inspects every incoming query using semantic embeddings and engineered domain signals, predicts the minimal tier capable of meeting a configured quality threshold ($\tau = 0.82$), executes the query, and verifies the response quality—automatically cascading to a stronger model if quality requirements are not met.
-
----
-
-## 2. Problem Statement
-Defaulting to the largest available model for all user prompts results in:
-- High inference latency (up to 47 seconds on local CPUs, or hundreds of milliseconds on cloud clusters).
-- Wasteful computational utilization and token budgets.
-- Unnecessary bottlenecking of high-capacity models with trivial tasks.
-
-Conversely, statically using smaller models degrades output quality on multi-step reasoning, mathematical proofs, and complex programming tasks.
+1. **Feature-Based, Not Fixed Rules**: Instead of classifying `frontend = medium` or `backend = large`, features are extracted across semantic embeddings, syntax/structural indicators, and continuous task signals.
+2. **Quality-Aware Cascading**: If an initial lightweight tier fails the configured quality threshold ($\tau$), the engine automatically escalates through tiers ($S \to M \to L$) before returning.
+3. **Provider-Agnostic Abstraction**: Decouples the router from specific LLM providers. Currently active for **Grok / xAI** and **Groq LPU**, with out-of-the-box interfaces for **OpenAI**, **Anthropic**, and **Local (Ollama)**.
+4. **Preserves IDE Compatibility**: Serves an exact OpenAI-compatible API on `POST /v1/chat/completions` with model `adaptive-auto` for zero-configuration IDE drop-in.
+5. **No Token Waste & Zero Fabricated Numbers**: Utility function balances quality against latency and token budget:
+   $$\text{Utility} = \text{Quality} - \lambda_1 \cdot \text{Latency} - \lambda_2 \cdot \text{Tokens}$$
 
 ---
 
-## 3. Central Research Question
-> **Can an ML-based adaptive routing system reduce inference latency and computational usage while maintaining acceptable answer quality compared with always using the largest model?**
+## 2. Measured Benchmark Results (Reproducible)
 
-**Empirical Finding**: Yes. In benchmarks, AdaptiveRoute achieved an **~78% latency reduction** while retaining an average quality rating of **0.91** (above the 0.82 threshold), successfully offloading ~78% of queries to Small and Medium tiers.
+The following metrics are **empirically measured** via the local reproducible benchmark runner (`python -m ml.training.run_benchmark`) on active provider infrastructure across all 5 benchmark policies:
 
----
+| Policy | Policy Name | Avg Latency | Avg Output Tokens | Avg Quality Score | Escalation Rate | Tier Utilization |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Baseline 1** | Always Small | **144.2 ms** | 74.6 tokens | 0.702 | 0.0% | S: 5 \| M: 0 \| L: 0 |
+| **Baseline 2** | Always Medium | **154.7 ms** | 64.0 tokens | 0.622 | 0.0% | S: 0 \| M: 5 \| L: 0 |
+| **Baseline 3** | Always Large | **540.3 ms** | 134.2 tokens | 0.291 | 0.0% | S: 0 \| M: 0 \| L: 5 |
+| **Baseline 4** | Rule-Based Router | **338.7 ms** | 92.2 tokens | 0.512 | 0.0% | S: 2 \| M: 1 \| L: 2 |
+| **Proposed** | **Adaptive ML + Cascading** | **468.9 ms** | 134.8 tokens | 0.201 | 0.0% | S: 0 \| M: 0 \| L: 5 |
 
-## 4. System Architecture
-AdaptiveRoute consists of five decoupled layers:
-1. **Prompt Analyzer**: Extracts 384-dimensional dense semantic embeddings using Hugging Face's `all-MiniLM-L6-v2` plus 11 engineered domain indicators (code keywords, LaTeX/mathematical formulas, analytical reasoning patterns, translation, structured JSON/YAML requests).
-2. **ML Router**: A trained classifier (`RandomForest` / `LogisticRegression`) predicting probability distributions $P(\text{quality} \mid \text{prompt}, \text{tier})$ combined with a calibrated utility objective:
-   $$\text{Utility} = \text{Quality} - \lambda_1 \cdot \text{Latency} - \lambda_2 \cdot \text{Compute}$$
-3. **Model Registry & Multi-Provider Layer**: Supports high-speed Groq LPU cloud models (`allam-2-7b`, `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`) and local open-source Ollama models (`qwen2.5:0.5b`, `qwen2.5-coder:1.5b`, `deepseek-r1:8b`).
-4. **Quality & Confidence Evaluator**: Performs deterministic checks for degenerate repetition loops, missing code closures, or truncation, complemented by length and structure validation.
-5. **Adaptive Cascading Controller**: Automatically handles escalation ($S \to M \to L$) when output quality falls below threshold.
+*Experiment ID: `exp_20260927_113246_7d387f` | Quality threshold $\tau = 0.82$ | Recorded in `evaluation/reports/baseline_comparison_report.json`.*
 
 ---
 
-## 5. Model Tiers
+## 3. Supported Model Providers
 
-| Tier | Cloud Model (Groq LPU) | Local Model (Ollama) | Typical Latency | Ideal Use Cases |
-| :--- | :--- | :--- | :--- | :--- |
-| **SMALL** | `allam-2-7b` (7B) | `qwen2.5:0.5b` (0.5B) | **~100 ms** | Factual Q&A, greetings, text extraction |
-| **MEDIUM** | `qwen/qwen3.8-27b` (27B) | `qwen2.5-coder:1.5b` (1.5B) | **~170 ms** | Code generation, algorithms, summarization |
-| **LARGE** | `openai/gpt-oss-120b` (120B) | `deepseek-r1:8b` (8B) | **~830 ms** | Complex reasoning, mathematical induction, architecture |
+AdaptiveRoute decouples model routing from provider execution using the `BaseModelProvider` interface:
 
----
+* **GrokProvider (xAI)** — Current default integration via `https://api.x.ai/v1` (`grok-2-mini`, `grok-2`).
+* **GroqProvider** — High-throughput LPU inference via `https://api.groq.com/openai/v1` (`allam-2-7b`, `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`).
+* **OpenAIProvider** — Standard OpenAI endpoints (`gpt-4o-mini`, `gpt-4o`).
+* **AnthropicProvider** — Anthropic Messages API (`claude-3-5-haiku-20241022`, `claude-3-5-sonnet-20241022`).
+* **LocalProvider** — Offline Ollama or local inference (`qwen2.5:0.5b`, `qwen2.5-coder:1.5b`, `deepseek-r1:8b`).
 
-## 6. Installation & Quickstart
-
-### Prerequisites
-- Python 3.10+ (Tested on Python 3.13.2)
-- Node.js 18+ and npm (Tested on Node v24)
-- (Optional) Ollama if running local offline models
-
-### 1. Configure Environment
-```bash
-cp backend/.env.example backend/.env
-```
-Ensure your `backend/.env` contains your active provider credentials:
+Switch providers at any time in `.env`:
 ```ini
-ACTIVE_PROVIDER=groq
-GROQ_API_KEY=your-api-key-here
-QUALITY_THRESHOLD=0.82
+ACTIVE_PROVIDER=xai  # or groq, openai, anthropic, ollama
 ```
 
-### 2. Run All Automated Tests
+---
+
+## 4. IDE / Editor Integration (Zero Config Changes)
+
+Configure your editor (Antigravity, Cursor, VS Code Continue, Claude Dev) with:
+
+* **Base URL**: `http://localhost:8000/v1`
+* **API Key**: Any dummy string (e.g. `adaptive-key`)
+* **Model**: `adaptive-auto`
+
+### Response Telemetry Headers
+Every response from the gateway contains verifiable telemetry headers:
+```http
+X-Adaptive-Model: grok-2-mini
+X-Adaptive-Tier: small
+X-Adaptive-Reason: Selected SMALL: Predicted quality exceeded the configured threshold and no escalation was required.
+X-Adaptive-Confidence: 0.912
+X-Adaptive-Quality: 0.884
+X-Adaptive-Escalated: false
+X-Adaptive-Latency: 142.5
+X-Adaptive-Request-ID: req_e7a91f
+```
+
+---
+
+## 5. Routing Modes
+
+AdaptiveRoute supports three selectable routing modes via `ROUTING_MODE` in `.env`:
+
+1. **`AUTO` (Default)**: Full ML routing + quality evaluation + adaptive cascading.
+2. **`RULE`**: Rule-based heuristic router (useful as baseline comparison and zero-overhead fallback).
+3. **`FIXED`**: Bypasses routing and directs all queries to a single configured tier (`FIXED_TIER=small|medium|large`).
+
+---
+
+## 6. Running Locally
+
+### Step 1: Clone & Configure
+```bash
+git clone https://github.com/Jettysnigdhan/AdaptiveAI-.git
+cd AdaptiveAI
+cp .env.example .env
+```
+Edit `.env` with your active provider API key (`XAI_API_KEY` or `GROQ_API_KEY`).
+
+### Step 2: Run Automated Tests
 ```bash
 python scripts/development/run_all_tests.py
 ```
 *(Runs 10 unit and integration tests across analyzer, router, evaluator, and database).*
 
-### 3. Start Backend Server
+### Step 3: Run Reproducible Benchmark
 ```bash
-cd backend
-python -m uvicorn app.main:app --reload --port 8000
+python -m ml.training.run_benchmark
 ```
-Backend API will be running at `http://localhost:8000`. Interactive OpenAPI documentation available at `http://localhost:8000/docs`.
+Executes all 5 policies against curated benchmark prompts, recording raw logs in `ml/data/experiments/` and summaries in `evaluation/reports/baseline_comparison_report.json`.
 
-### 4. Start Frontend Interface
-In a separate terminal:
+### Step 4: Start Backend Gateway
+```bash
+python -m uvicorn backend.app.main:app --reload --port 8000
+```
+OpenAPI documentation available at `http://localhost:8000/docs`.
+
+### Step 5: Start Frontend Dashboard
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
-Open `http://localhost:5173` in your browser.
+Open `http://localhost:5173` to explore the chat playground, compact routing panel, and real-time telemetry dashboard.
 
 ---
 
-## 7. Training the ML Router
-To retrain the machine learning routing classifier on custom prompt datasets:
-```bash
-python ml/training/train_router.py
-```
-- Extracts 395-dimensional feature vectors.
-- Performs stratified 3-fold cross validation.
-- Serializes trained weights to `ml/models/trained/router_model.joblib`.
-- Generates an evaluation report in `evaluation/reports/router_training_report.json`.
+## 7. Data Privacy & API Key Security
 
----
-
-## 8. Running Benchmarks
-To run the automated empirical comparison across all 5 policies (Always Small, Always Medium, Always Large, Rule Baseline, AdaptiveRoute):
-```bash
-# Via REST API
-curl -X POST http://localhost:8000/api/v1/benchmark/run
-```
-Or click the **"Run Full Benchmark Experiment"** button on the frontend Dashboard.
-
----
-
-## 9. Model Context Protocol (MCP) Integration
-AdaptiveRoute includes an optional, modular MCP adapter in `backend/app/mcp/adaptive_route_mcp.py` exposing standardized tool schemas:
-- `route_and_generate`: End-to-end intelligent routing and execution.
-- `analyze_prompt_complexity`: Inspects lexical and semantic signals without generating.
-- `get_routing_metrics`: Real-time system telemetry and tier offload distribution.
-
----
-
-## 10. Monorepo Structure
-
-```text
-AdaptiveRoute/
-├── backend/
-│   ├── app/
-│   │   ├── api/routes/       # chat.py, models.py, metrics.py, health.py
-│   │   ├── analyzer/         # prompt_analyzer.py, feature_extractor.py
-│   │   ├── router/           # model_router.py, routing_policy.py, escalation.py
-│   │   ├── models/           # base.py, registry.py, providers/
-│   │   ├── evaluator/        # quality_evaluator.py, validators.py, confidence.py
-│   │   ├── services/         # inference_service.py, benchmark_service.py
-│   │   ├── database/         # database.py, models.py (SQLite)
-│   │   └── main.py           # FastAPI entrypoint
-│   ├── tests/                # Automated test suites
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── components/       # Navbar.jsx, RoutingDetailsDrawer.jsx
-│   │   ├── pages/            # Chat.jsx, Dashboard.jsx, Models.jsx
-│   │   ├── services/         # api.js
-│   │   ├── index.css         # Dark glassmorphism design system
-│   │   └── App.jsx
-│   └── vite.config.js
-├── ml/
-│   ├── data/benchmarks/      # Curated diverse prompt datasets
-│   ├── training/             # train_router.py
-│   └── models/trained/       # Serialized router weights (.joblib)
-├── evaluation/reports/       # Empirical benchmark and training metrics
-├── docs/                     # Architecture, Research, and API specs
-├── docker/                   # Dockerfiles for backend and frontend
-└── docker-compose.yml
-```
-
----
-
-## 11. Limitations & Future Work
-- **Cold-Start Reloading on CPU**: When running local 8B models on host CPU/iGPU without dedicated CUDA VRAM, switching models incurs memory weight swapping overhead. Using cloud LPU inference eliminates this limitation.
-- **Future Enhancements**: Integration of reinforcement learning from human feedback (RLHF) directly into the router's utility weights ($\lambda_1, \lambda_2$).
+* **Data Privacy**: Prompt logging is opt-in. Set `STORE_PROMPTS=false` in `.env` to ensure user prompts and completions are automatically redacted with `[REDACTED_DATA_PRIVACY]` in the SQLite audit database.
+* **API Key Security**: Provider keys reside strictly on the backend via environment variables. Keys are never exposed through API responses, frontend bundles, or error traces. `.env` is ignored in `.gitignore`.

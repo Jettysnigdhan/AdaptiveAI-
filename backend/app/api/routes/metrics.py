@@ -40,3 +40,24 @@ async def run_benchmark(
     vs AdaptiveRoute.
     """
     return await bench.run_full_comparison()
+
+
+@router.get("/metrics/baselines")
+async def get_baseline_comparison() -> Dict[str, Any]:
+    """Retrieve measured baseline comparison report."""
+    from pathlib import Path
+    import json
+    report_file = Path("./evaluation/reports/baseline_comparison_report.json")
+    if not report_file.exists():
+        return {
+            "status": "not_available",
+            "message": "Benchmark not available. Run benchmark to generate results.",
+            "policies": {}
+        }
+    try:
+        with open(report_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return {"status": "available", **data}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "policies": {}}
+

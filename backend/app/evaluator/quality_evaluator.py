@@ -30,10 +30,13 @@ class QualityEvaluator:
         finish_reason: str = "stop",
         model_name: str = "",
         tier_level: int = 1,
+        eval_criteria: Optional[dict] = None,
     ) -> EvaluationResult:
         """
         Evaluate answer quality against configured threshold.
-        Applies deterministic criteria + confidence scoring.
+        Combines deterministic validation, criteria matching, and confidence heuristics.
+        Note: Automated evaluation scores are empirical heuristics for routing decisions,
+        not absolute ground truth.
         """
         # 1. Deterministic Failures
         if ResponseValidators.is_empty_or_whitespace(response_text):
@@ -62,7 +65,22 @@ class QualityEvaluator:
                 reason=f"Repetitive loop detected (repetition ratio: {rep_ratio}).",
             )
 
-        # 2. Quality heuristics based on prompt type & response structure
+        # 2. Specific benchmark criteria check (if provided)
+        crit_score = 1.0
+        crit_reason = ""
+        if eval_criteria:
+            passed_crit, c_score, c_reason = ResponseValidators.validate_criteria(response_text, eval_criteria)
+            crit_score = c_score
+            crit_reason = f" [{c_reason}]"
+            if not passed_crit:
+                return EvaluationResult(
+                    quality_score=round(c_score * 0.75, 2),
+                    confidence=0.95,
+                    passed=False,
+                    reason=f"Deterministic criteria check failed: {c_reason}",
+                )
+
+        # 3. Structural confidence & heuristic scoring
         confidence = ConfidenceScorer.calculate_confidence(
             prompt=prompt,
             response_text=response_text,
@@ -71,34 +89,30 @@ class QualityEvaluator:
         )
 
         # Base quality estimation
-        quality = 0.88
+        quality = 0.88 * crit_score
 
-        # Heuristic 1: If prompt asks for code and response has no code block or keywords
         prompt_lower = prompt.lower()
         if any(w in prompt_lower for w in ["write a function", "write code", "implement", "class", "def "]):
             has_code_syntax = "def " in response_text or "class " in response_text or "```" in response_text or "function" in response_text
             if not has_code_syntax:
                 quality -= 0.35
             elif not ResponseValidators.validate_code_blocks(response_text):
-                quality -= 0.15
+                quality -= 0.20
 
-        # Heuristic 2: Short prompt demanding explanation but response is trivial
         if any(w in prompt_lower for w in ["explain", "why", "describe"]) and len(response_text.split()) < 15:
             quality -= 0.25
 
-        # Heuristic 3: Deduct if truncated
         if finish_reason != "stop":
             quality -= 0.20
 
-        # Adjust for confidence
         quality = min(0.99, max(0.1, quality * (0.8 + 0.2 * confidence)))
         quality = round(quality, 3)
 
         passed = quality >= self.quality_threshold
         if passed:
-            reason = f"Response satisfied criteria with quality score {quality:.2f} >= threshold {self.quality_threshold:.2f}."
+            reason = f"Response satisfied quality criteria (score: {quality:.2f} >= {self.quality_threshold:.2f}).{crit_reason}"
         else:
-            reason = f"Response scored {quality:.2f}, below quality threshold {self.quality_threshold:.2f}. Escalation recommended."
+            reason = f"Response scored {quality:.2f}, below quality threshold {self.quality_threshold:.2f}. Escalation recommended.{crit_reason}"
 
         return EvaluationResult(
             quality_score=quality,

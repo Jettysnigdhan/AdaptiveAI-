@@ -66,6 +66,18 @@ class ModelMetadata(BaseModel):
     enabled: bool = Field(default=True, description="Whether this model is active for routing")
     description: str = Field(default="", description="Human-readable model notes")
 
+    @property
+    def average_latency(self) -> Optional[float]:
+        return self.measured_latency_ms
+
+    @property
+    def average_quality(self) -> float:
+        return self.quality_score_avg
+
+    @property
+    def average_tokens(self) -> float:
+        return round((self.token_usage_total / self.request_count), 1) if self.request_count > 0 else 0.0
+
 
 class GenerationRequest(BaseModel):
     """Standardized generation request."""

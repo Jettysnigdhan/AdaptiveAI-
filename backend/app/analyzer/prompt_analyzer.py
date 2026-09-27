@@ -15,10 +15,15 @@ class PromptAnalysisResult(BaseModel):
     detected_category: str = Field(description="Primary category classification")
     complexity_score: float = Field(description="Normalized prompt complexity [0.0 - 1.0]")
     extracted_tokens: int
+    task_signals: Dict[str, float] = Field(default_factory=dict, description="Task domain signals (features for ML routing)")
 
     def get_full_feature_vector(self) -> List[float]:
-        """Concatenate semantic embedding with scalar engineered features."""
+        """Concatenate semantic embedding with scalar engineered features (11-dim)."""
         return self.embedding + self.features.to_vector()
+
+    def get_extended_feature_vector(self) -> List[float]:
+        """Concatenate semantic embedding with extended structural and task features."""
+        return self.embedding + self.features.to_extended_vector()
 
 
 class PromptAnalyzer:
@@ -111,6 +116,7 @@ class PromptAnalyzer:
             detected_category=category,
             complexity_score=features.complexity_indicator,
             extracted_tokens=features.token_estimate,
+            task_signals=features.task_signals,
         )
 
 

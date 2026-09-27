@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart2, Activity, Play, Shield, Clock, TrendingDown, Layers, ArrowUpRight, CheckCircle2 } from 'lucide-react';
-import { fetchMetrics, fetchRecentInferences, runBenchmarkComparison } from '../services/api';
+import { Activity, Play, Shield, Clock, Layers, RefreshCw } from 'lucide-react';
+import { fetchMetrics, fetchRecentInferences, fetchBaselineComparison, runBenchmarkComparison } from '../services/api';
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(null);
   const [inferences, setInferences] = useState([]);
-  const [benchmarkData, setBenchmarkData] = useState(null);
+  const [baselineReport, setBaselineReport] = useState(null);
   const [benchmarking, setBenchmarking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
-      const [m, inf] = await Promise.all([fetchMetrics(), fetchRecentInferences(25)]);
+      const [m, inf, base] = await Promise.all([
+        fetchMetrics().catch(() => null),
+        fetchRecentInferences(25).catch(() => []),
+        fetchBaselineComparison().catch(() => null),
+      ]);
       setMetrics(m);
-      setInferences(inf);
+      setInferences(inf || []);
+      setBaselineReport(base);
     } catch (e) {
       console.error('Failed to load metrics:', e);
     } finally {
@@ -30,9 +35,8 @@ export default function Dashboard() {
   const handleRunBenchmark = async () => {
     setBenchmarking(true);
     try {
-      const results = await runBenchmarkComparison();
-      setBenchmarkData(results);
-      loadData();
+      await runBenchmarkComparison();
+      await loadData();
     } catch (e) {
       console.error('Benchmark failed:', e);
       alert('Benchmark error: ' + e.message);
@@ -41,11 +45,35 @@ export default function Dashboard() {
     }
   };
 
-  const total = metrics?.total_requests || 0;
-  const dist = metrics?.model_distribution || { small: 0, medium: 0, large: 0 };
-  const smallPct = total > 0 ? ((dist.small / total) * 100).toFixed(0) : 0;
-  const mediumPct = total > 0 ? ((dist.medium / total) * 100).toFixed(0) : 0;
-  const largePct = total > 0 ? ((dist.large / total) * 100).toFixed(0) : 0;
+  const req = metrics?.requests || {
+    total_requests: metrics?.total_requests || 0,
+    small_requests: metrics?.model_distribution?.small || 0,
+    medium_requests: metrics?.model_distribution?.medium || 0,
+    large_requests: metrics?.model_distribution?.large || 0,
+    escalated_requests: 0,
+  };
+
+  const qual = metrics?.quality || {
+    avg_quality: metrics?.avg_quality_score || 0.0,
+    median_quality: 0.0,
+    quality_threshold_violations: 0,
+  };
+
+  const perf = metrics?.performance || {
+    avg_latency_ms: metrics?.avg_latency_ms || 0.0,
+    p50_latency_ms: 0.0,
+    p95_latency_ms: 0.0,
+    avg_output_tokens: 0.0,
+  };
+
+  const rout = metrics?.routing || {
+    small_utilization_pct: 0.0,
+    medium_utilization_pct: 0.0,
+    large_utilization_pct: 0.0,
+    escalation_pct: metrics?.escalation_rate || 0.0,
+  };
+
+  const hasBaselines = baselineReport?.status === 'available' && baselineReport?.policies && Object.keys(baselineReport.policies).length > 0;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px' }}>
@@ -66,160 +94,185 @@ export default function Dashboard() {
           className="btn-primary"
           style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' }}
         >
-          <Play size={16} />
-          <span>{benchmarking ? 'Running Benchmark (12 prompts x 5 policies)...' : 'Run Full Benchmark Experiment'}</span>
+          {benchmarking ? <RefreshCw size={16} className="spin" /> : <Play size={16} />}
+          <span>{benchmarking ? 'Running Benchmark...' : 'Run Benchmark Experiment'}</span>
         </button>
       </div>
 
-      {/* Aggregate Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px', marginBottom: '28px' }}>
+      {/* SECTION 16: EXPERIMENT DASHBOARD METRICS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '18px', marginBottom: '28px' }}>
+        {/* Panel 1: Requests */}
         <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
-            <span>Total Requests</span>
-            <Activity size={16} color="#818cf8" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#818cf8', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '12px' }}>
+            <span>Requests</span>
+            <Activity size={16} />
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, marginTop: '10px', color: '#fff' }}>
-            {metrics?.total_requests || 0}
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>
+            {req.total_requests} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>total</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Logged in local SQLite database
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Small Requests:</span>
+              <span className="mono" style={{ color: '#34d399' }}>{req.small_requests}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Medium Requests:</span>
+              <span className="mono" style={{ color: '#38bdf8' }}>{req.medium_requests}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Large Requests:</span>
+              <span className="mono" style={{ color: '#a855f7' }}>{req.large_requests}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Escalated Requests:</span>
+              <span className="mono" style={{ color: '#f43f5e' }}>{req.escalated_requests}</span>
+            </div>
           </div>
         </div>
 
+        {/* Panel 2: Quality */}
         <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
-            <span>Average Latency</span>
-            <Clock size={16} color="#38bdf8" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '12px' }}>
+            <span>Quality</span>
+            <Shield size={16} />
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, marginTop: '10px', color: '#38bdf8' }}>
-            {metrics?.avg_latency_ms || 0} <span style={{ fontSize: '1rem', fontWeight: 500 }}>ms</span>
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#34d399', marginBottom: '12px' }}>
+            {qual.avg_quality} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>/ 1.0</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            End-to-end wall clock latency
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Average Quality:</span>
+              <span className="mono">{qual.avg_quality}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Median Quality:</span>
+              <span className="mono">{qual.median_quality}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Threshold Violations:</span>
+              <span className="mono" style={{ color: qual.quality_threshold_violations > 0 ? '#f43f5e' : '#10b981' }}>
+                {qual.quality_threshold_violations}
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Panel 3: Performance */}
         <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
-            <span>Average Quality</span>
-            <Shield size={16} color="#34d399" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '12px' }}>
+            <span>Performance</span>
+            <Clock size={16} />
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, marginTop: '10px', color: '#34d399' }}>
-            {metrics?.avg_quality_score || 0} <span style={{ fontSize: '1rem', fontWeight: 500 }}>/ 1.0</span>
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#38bdf8', marginBottom: '12px' }}>
+            {perf.avg_latency_ms} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>ms avg</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Evaluated against 0.82 threshold
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>P50 Latency:</span>
+              <span className="mono">{perf.p50_latency_ms} ms</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>P95 Latency:</span>
+              <span className="mono">{perf.p95_latency_ms} ms</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Avg Output Tokens:</span>
+              <span className="mono">{perf.avg_output_tokens}</span>
+            </div>
           </div>
         </div>
 
+        {/* Panel 4: Routing */}
         <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
-            <span>Escalation Rate</span>
-            <TrendingDown size={16} color="#f59e0b" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '12px' }}>
+            <span>Routing</span>
+            <Layers size={16} />
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, marginTop: '10px', color: '#f59e0b' }}>
-            {metrics?.escalation_rate || 0}%
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#f59e0b', marginBottom: '12px' }}>
+            {rout.escalation_pct}% <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>escalation</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Hops to higher capacity tiers
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Small Utilization:</span>
+              <span className="mono">{rout.small_utilization_pct}%</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Medium Utilization:</span>
+              <span className="mono">{rout.medium_utilization_pct}%</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Large Utilization:</span>
+              <span className="mono">{rout.large_utilization_pct}%</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Escalation %:</span>
+              <span className="mono">{rout.escalation_pct}%</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tier Distribution Progress */}
+      {/* SECTION 17: BASELINE COMPARISON DASHBOARD (AdaptiveRoute vs Baselines) */}
       <div className="glass-panel" style={{ padding: '22px', marginBottom: '28px' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '14px', color: '#f1f5f9' }}>
-          Model Tier Distribution (Workload Offloading)
-        </h3>
-        {total === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No inferences recorded yet. Send prompts in the Chat Gateway.</div>
-        ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
-            <div style={{ display: 'flex', height: '14px', borderRadius: '7px', overflow: 'hidden', marginBottom: '12px' }}>
-              <div style={{ width: `${smallPct}%`, background: 'var(--tier-small)' }} title={`Small: ${dist.small}`} />
-              <div style={{ width: `${mediumPct}%`, background: 'var(--tier-medium)' }} title={`Medium: ${dist.medium}`} />
-              <div style={{ width: `${largePct}%`, background: 'var(--tier-large)' }} title={`Large: ${dist.large}`} />
-            </div>
-
-            <div style={{ display: 'flex', gap: '24px', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--tier-small)' }} />
-                <span>Small Tier: <strong>{dist.small}</strong> ({smallPct}%)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--tier-medium)' }} />
-                <span>Medium Tier: <strong>{dist.medium}</strong> ({mediumPct}%)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--tier-large)' }} />
-                <span>Large Tier: <strong>{dist.large}</strong> ({largePct}%)</span>
-              </div>
-            </div>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>
+              AdaptiveRoute vs Baselines
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '2px' }}>
+              Measured comparison across 5 policies. Experiments recorded locally without fabricated scores.
+            </p>
           </div>
-        )}
-      </div>
-
-      {/* Benchmark Comparison Section (Section 11 & 12) */}
-      <div className="glass-panel" style={{ padding: '22px', marginBottom: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f8fafc' }}>
-            Empirical Baseline Comparison (Section 11)
-          </h3>
-          {benchmarkData?.latency_reduction_percent && (
-            <span style={{
-              background: 'rgba(16, 185, 129, 0.15)',
-              color: '#34d399',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '20px',
-              padding: '4px 12px',
-              fontSize: '0.82rem',
-              fontWeight: 600
-            }}>
-              ⚡ {benchmarkData.latency_reduction_percent}% Latency Reduction vs Always Large
+          {hasBaselines && baselineReport?.experiment_id && (
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-sub)' }} className="mono">
+              ID: {baselineReport.experiment_id}
             </span>
           )}
         </div>
 
-        {benchmarkData ? (
+        {hasBaselines ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '10px 14px' }}>Policy / System</th>
-                  <th style={{ padding: '10px 14px' }}>Avg Latency</th>
-                  <th style={{ padding: '10px 14px' }}>Total Tokens</th>
-                  <th style={{ padding: '10px 14px' }}>Avg Quality</th>
+                  <th style={{ padding: '10px 14px' }}>Policy</th>
+                  <th style={{ padding: '10px 14px' }}>Quality</th>
+                  <th style={{ padding: '10px 14px' }}>Latency</th>
+                  <th style={{ padding: '10px 14px' }}>Tokens</th>
+                  <th style={{ padding: '10px 14px' }}>Model Utilization</th>
                   <th style={{ padding: '10px 14px' }}>Escalation Rate</th>
-                  <th style={{ padding: '10px 14px' }}>Tier Breakdown</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(benchmarkData.comparison).map(([policy, data]) => {
-                  const isAdaptive = policy === 'adaptive_route';
+                {Object.entries(baselineReport.policies).map(([key, data]) => {
+                  const isAdaptive = key === 'auto';
+                  const dist = data.tier_distribution || {};
                   return (
                     <tr
-                      key={policy}
+                      key={key}
                       style={{
                         borderBottom: '1px solid var(--border)',
                         background: isAdaptive ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
-                        fontWeight: isAdaptive ? 600 : 400
+                        fontWeight: isAdaptive ? 600 : 400,
                       }}
                     >
-                      <td style={{ padding: '12px 14px', textTransform: 'capitalize' }}>
-                        {isAdaptive ? '⭐ AdaptiveRoute (Proposed)' : policy.replace('_', ' ')}
+                      <td style={{ padding: '12px 14px' }}>
+                        {isAdaptive ? '⭐ ' : ''}{data.name || key}
                       </td>
                       <td style={{ padding: '12px 14px' }} className="mono">
-                        {data.avg_latency_ms} ms
+                        {data.avg_quality_score != null ? data.avg_quality_score : '-'}
                       </td>
-                      <td style={{ padding: '12px 14px' }} className="mono">{data.total_tokens}</td>
                       <td style={{ padding: '12px 14px' }} className="mono">
-                        <span style={{ color: data.avg_quality >= 0.82 ? '#34d399' : '#f59e0b' }}>
-                          {data.avg_quality}
-                        </span>
+                        {data.avg_latency_ms != null ? `${data.avg_latency_ms} ms` : '-'}
                       </td>
-                      <td style={{ padding: '12px 14px' }}>{data.escalation_rate}%</td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: 'var(--text-sub)' }}>
-                        S: {data.tier_distribution?.small || 0} | M: {data.tier_distribution?.medium || 0} | L: {data.tier_distribution?.large || 0}
+                      <td style={{ padding: '12px 14px' }} className="mono">
+                        {data.avg_output_tokens != null ? data.avg_output_tokens : '-'}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: 'var(--text-sub)' }}>
+                        S: {dist.small || 0} | M: {dist.medium || 0} | L: {dist.large || 0}
+                      </td>
+                      <td style={{ padding: '12px 14px' }} className="mono">
+                        {data.escalation_rate != null ? `${data.escalation_rate}%` : '0%'}
                       </td>
                     </tr>
                   );
@@ -228,8 +281,9 @@ export default function Dashboard() {
             </table>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Click <strong>"Run Full Benchmark Experiment"</strong> above to empirically measure and compare all 5 baseline policies.
+          <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: '1.6' }}>
+            <p style={{ fontWeight: 500, color: '#e2e8f0' }}>Benchmark not available.</p>
+            <p>Run benchmark to generate results.</p>
           </div>
         )}
       </div>
@@ -287,3 +341,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

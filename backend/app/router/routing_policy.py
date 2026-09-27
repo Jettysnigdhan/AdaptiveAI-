@@ -27,29 +27,65 @@ class RoutingPolicy:
 
     def rule_based_selection(self, analysis: PromptAnalysisResult) -> Tuple[ModelTier, float, str]:
         """
-        Rule-based baseline router using heuristic signals:
-        - High reasoning / complex math -> Large
-        - Coding / summarization / moderate complexity -> Medium
-        - Factual lookup / simple prompt -> Small
+        Intelligent IDE & Agent task router:
+        - Complex Backend architecture / security / database / hard debugging -> Large Tier
+        - Frontend UI / components / CSS / moderate code -> Medium Tier
+        - Low complexity / simple syntax / docstrings / git / terminal / factual -> Small Tier
         """
         features = analysis.features
         complexity = analysis.complexity_score
+        prompt_lower = analysis.prompt.lower()
 
-        if features.has_reasoning or (features.has_math and complexity > 0.6) or complexity >= 0.70:
-            return (
-                ModelTier.LARGE,
-                0.85,
-                "Rule baseline selected Large tier: Prompt contains complex reasoning, advanced math, or high multi-step complexity."
-            )
-        elif features.has_code or features.has_summarization or features.has_structured_data or complexity >= 0.35:
-            return (
-                ModelTier.MEDIUM,
-                0.88,
-                "Rule baseline selected Medium tier: Prompt involves code, structured data, or moderate algorithmic logic."
-            )
+        # Keywords for Backend Architecture, Security, Database, Concurrency
+        is_backend_complex = any(
+            k in prompt_lower for k in [
+                "architecture", "database schema", "relational", "concurrency", "thread-safe",
+                "jwt", "cryptograph", "microservice", "distributed", "transaction isolation",
+                "race condition", "memory leak", "deadlock", "sql injection", "authorization"
+            ]
+        )
+        # Keywords for Stack trace / Crash debugging
+        is_hard_debugging = any(
+            k in prompt_lower for k in [
+                "traceback (most recent call last)", "segmentation fault", "nullpointerexception",
+                "stack trace", "fatal error", "core dumped", "unhandled exception"
+            ]
+        )
+        # Keywords for Frontend UI / Styling
+        is_frontend = any(
+            k in prompt_lower for k in [
+                "react", "vue", "tailwind", "css", "html", "jsx", "tsx", "button", "modal",
+                "navbar", "ui component", "flexbox", "grid", "styling", "frontend", "form layout"
+            ]
+        )
+        # Keywords for Lightweight / Low complexity tasks
+        is_lightweight_task = any(
+            k in prompt_lower for k in [
+                "rename variable", "add docstring", "add comment", "git commit", "bash command",
+                "regex to", "explain syntax", "format json", "what does this mean", "typo"
+            ]
+        ) or (len(prompt_lower.split()) < 15 and not features.has_reasoning and not is_backend_complex and not is_hard_debugging)
+
+        # 1. High Complexity / Backend Architecture / Critical Debugging -> LARGE Tier
+        if is_backend_complex or is_hard_debugging or features.has_reasoning or (features.has_math and complexity > 0.6) or complexity >= 0.70:
+            reason = "Selected Large Tier: Task requires advanced backend architecture, complex multi-step reasoning, or deep debugging."
+            if is_backend_complex:
+                reason = "Selected Large Tier: Backend architecture, database schema, or security logic detected."
+            elif is_hard_debugging:
+                reason = "Selected Large Tier: Critical crash or stack trace debugging detected."
+            return (ModelTier.LARGE, 0.92, reason)
+
+        # 2. Frontend UI / Standard Code / Moderate Complexity -> MEDIUM Tier
+        elif is_frontend or (features.has_code and not is_lightweight_task) or features.has_summarization or features.has_structured_data or complexity >= 0.35:
+            reason = "Selected Medium Tier: Frontend UI component, styling, or standard coding task."
+            if is_frontend:
+                reason = "Selected Medium Tier: Frontend UI/React/CSS design task routed to fast, efficient code model."
+            return (ModelTier.MEDIUM, 0.90, reason)
+
+        # 3. Low Complexity / Simple Queries / Lightweight Edits -> SMALL Tier
         else:
             return (
                 ModelTier.SMALL,
-                0.92,
-                "Rule baseline selected Small tier: Prompt classified as standard factual query or low-complexity task."
+                0.94,
+                "Selected Small Tier: Low-complexity task, simple edit, docstring, or factual query offloaded to zero-cost/fast tier."
             )

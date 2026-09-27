@@ -1,29 +1,202 @@
 [
-  {"category": "general", "prompt": "What is the capital of Japan?", "target_tier": "small"},
-  {"category": "general", "prompt": "Who wrote Romeo and Juliet?", "target_tier": "small"},
-  {"category": "general", "prompt": "What is the boiling point of water in Celsius?", "target_tier": "small"},
-  {"category": "general", "prompt": "Name the largest ocean on Earth.", "target_tier": "small"},
-  {"category": "general", "prompt": "Say hello in Spanish, French, and German.", "target_tier": "small"},
-  {"category": "extraction", "prompt": "Extract the phone number from this text: Contact us at support@example.com or 555-0199.", "target_tier": "small"},
-  {"category": "extraction", "prompt": "List all names mentioned in: John and Alice met Bob at the library.", "target_tier": "small"},
-  {"category": "translation", "prompt": "Translate 'Good morning, how are you?' into Italian.", "target_tier": "small"},
-  {"category": "translation", "prompt": "Translate this sentence into Japanese: 'The weather is nice today.'", "target_tier": "small"},
-
-  {"category": "coding", "prompt": "Write a Python function to check if a string is a palindrome.", "target_tier": "medium"},
-  {"category": "coding", "prompt": "Implement binary search in Python returning index or -1.", "target_tier": "medium"},
-  {"category": "coding", "prompt": "Write a TypeScript function to debounce an input event handler.", "target_tier": "medium"},
-  {"category": "debugging", "prompt": "Find and fix the error in: def calc_avg(nums): return sum(nums) / len(nums) when nums is empty.", "target_tier": "medium"},
-  {"category": "debugging", "prompt": "Why is this SQL query returning duplicate rows: SELECT u.name, o.id FROM users u JOIN orders o ON u.id = o.user_id?", "target_tier": "medium"},
-  {"category": "code_explanation", "prompt": "Explain the time complexity of merge sort and why it requires O(N) auxiliary space.", "target_tier": "medium"},
-  {"category": "summarization", "prompt": "Summarize the key differences between SQL and NoSQL databases in 3 bullet points.", "target_tier": "medium"},
-  {"category": "summarization", "prompt": "Provide a brief 2-sentence summary of what a REST API is.", "target_tier": "medium"},
-  {"category": "structured_output", "prompt": "Generate a valid JSON object describing a user profile with id, username, email, and role.", "target_tier": "medium"},
-
-  {"category": "mathematics", "prompt": "Prove by mathematical induction that the sum of first n odd positive integers is n^2.", "target_tier": "large"},
-  {"category": "mathematics", "prompt": "Calculate the determinant and eigenvalues of the 3x3 matrix [[2, 1, 0], [1, 2, 1], [0, 1, 2]].", "target_tier": "large"},
-  {"category": "reasoning", "prompt": "Analyze the philosophical differences between deontological ethics and utilitarianism in autonomous vehicle decisions.", "target_tier": "large"},
-  {"category": "reasoning", "prompt": "Trace the step-by-step logic of the Byzantine Generals Problem and explain how Practical Byzantine Fault Tolerance achieves consensus.", "target_tier": "large"},
-  {"category": "planning", "prompt": "Design an end-to-end event-driven architecture for a real-time fraud detection banking platform handling 50k transactions/sec.", "target_tier": "large"},
-  {"category": "planning", "prompt": "Develop a multi-phase migration strategy from an on-premise monolithic architecture to microservices on Kubernetes.", "target_tier": "large"},
-  {"category": "creative", "prompt": "Compose a nuanced dialogue between Alan Turing and Ada Lovelace discussing whether modern transformers possess true understanding.", "target_tier": "large"}
+  {
+    "prompt_id": "p01",
+    "category": "general",
+    "task_type": "simple_qa",
+    "prompt": "What is the capital of Japan?",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_any", "values": ["Tokyo", "tokyo"]}
+  },
+  {
+    "prompt_id": "p02",
+    "category": "general",
+    "task_type": "simple_qa",
+    "prompt": "Who wrote Romeo and Juliet?",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_any", "values": ["Shakespeare", "William Shakespeare"]}
+  },
+  {
+    "prompt_id": "p03",
+    "category": "general",
+    "task_type": "simple_qa",
+    "prompt": "What is the boiling point of water in Celsius?",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_any", "values": ["100", "100°C", "100 degrees"]}
+  },
+  {
+    "prompt_id": "p04",
+    "category": "general",
+    "task_type": "simple_qa",
+    "prompt": "Name the largest ocean on Earth.",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_any", "values": ["Pacific", "pacific"]}
+  },
+  {
+    "prompt_id": "p05",
+    "category": "general",
+    "task_type": "simple_qa",
+    "prompt": "Say hello in Spanish, French, and German.",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_all", "values": ["hola", "bonjour", "hallo"]}
+  },
+  {
+    "prompt_id": "p06",
+    "category": "extraction",
+    "task_type": "extraction",
+    "prompt": "Extract the phone number from this text: Contact us at support@example.com or 555-0199.",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_any", "values": ["555-0199"]}
+  },
+  {
+    "prompt_id": "p07",
+    "category": "extraction",
+    "task_type": "extraction",
+    "prompt": "List all names mentioned in: John and Alice met Bob at the library.",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_all", "values": ["John", "Alice", "Bob"]}
+  },
+  {
+    "prompt_id": "p08",
+    "category": "translation",
+    "task_type": "translation",
+    "prompt": "Translate 'Good morning, how are you?' into Italian.",
+    "target_tier": "small",
+    "eval_criteria": {"type": "contains_any", "values": ["Buongiorno", "buongiorno", "come stai"]}
+  },
+  {
+    "prompt_id": "p09",
+    "category": "translation",
+    "task_type": "translation",
+    "prompt": "Translate this sentence into Japanese: 'The weather is nice today.'",
+    "target_tier": "small",
+    "eval_criteria": {"type": "min_length", "value": 5}
+  },
+  {
+    "prompt_id": "p10",
+    "category": "coding",
+    "task_type": "code_generation",
+    "prompt": "Write a Python function to check if a string is a palindrome.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "code_syntax", "lang": "python", "keywords": ["def ", "return", "=="]}
+  },
+  {
+    "prompt_id": "p11",
+    "category": "coding",
+    "task_type": "code_generation",
+    "prompt": "Implement binary search in Python returning index or -1.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "code_syntax", "lang": "python", "keywords": ["def ", "while", "<=", "//"]}
+  },
+  {
+    "prompt_id": "p12",
+    "category": "coding",
+    "task_type": "frontend",
+    "prompt": "Write a TypeScript function to debounce an input event handler.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "code_syntax", "lang": "typescript", "keywords": ["function", "setTimeout", "clearTimeout"]}
+  },
+  {
+    "prompt_id": "p13",
+    "category": "debugging",
+    "task_type": "debugging",
+    "prompt": "Find and fix the error in: def calc_avg(nums): return sum(nums) / len(nums) when nums is empty.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "contains_any", "values": ["ZeroDivisionError", "if not nums", "len(nums) == 0", "empty"]}
+  },
+  {
+    "prompt_id": "p14",
+    "category": "debugging",
+    "task_type": "database",
+    "prompt": "Why is this SQL query returning duplicate rows: SELECT u.name, o.id FROM users u JOIN orders o ON u.id = o.user_id?",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "contains_any", "values": ["one-to-many", "multiple orders", "duplicate", "DISTINCT", "join"]}
+  },
+  {
+    "prompt_id": "p15",
+    "category": "code_explanation",
+    "task_type": "explanation",
+    "prompt": "Explain the time complexity of merge sort and why it requires O(N) auxiliary space.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "contains_all", "values": ["O(N log N)", "auxiliary", "divide"]}
+  },
+  {
+    "prompt_id": "p16",
+    "category": "summarization",
+    "task_type": "summarization",
+    "prompt": "Summarize the key differences between SQL and NoSQL databases in 3 bullet points.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "contains_all", "values": ["schema", "relational"]}
+  },
+  {
+    "prompt_id": "p17",
+    "category": "summarization",
+    "task_type": "summarization",
+    "prompt": "Provide a brief 2-sentence summary of what a REST API is.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "contains_any", "values": ["HTTP", "stateless", "endpoints", "architectural style"]}
+  },
+  {
+    "prompt_id": "p18",
+    "category": "structured_output",
+    "task_type": "structured_data",
+    "prompt": "Generate a valid JSON object describing a user profile with id, username, email, and role.",
+    "target_tier": "medium",
+    "eval_criteria": {"type": "json_valid", "required_keys": ["id", "username", "email", "role"]}
+  },
+  {
+    "prompt_id": "p19",
+    "category": "mathematics",
+    "task_type": "mathematics",
+    "prompt": "Prove by mathematical induction that the sum of first n odd positive integers is n^2.",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_all", "values": ["base case", "induction", "k + 1"]}
+  },
+  {
+    "prompt_id": "p20",
+    "category": "mathematics",
+    "task_type": "mathematics",
+    "prompt": "Calculate the determinant and eigenvalues of the 3x3 matrix [[2, 1, 0], [1, 2, 1], [0, 1, 2]].",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_any", "values": ["determinant", "eigenvalues", "characteristic"]}
+  },
+  {
+    "prompt_id": "p21",
+    "category": "reasoning",
+    "task_type": "reasoning",
+    "prompt": "Analyze the philosophical differences between deontological ethics and utilitarianism in autonomous vehicle decisions.",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_all", "values": ["deontological", "utilitarianism", "Kant"]}
+  },
+  {
+    "prompt_id": "p22",
+    "category": "reasoning",
+    "task_type": "reasoning",
+    "prompt": "Trace the step-by-step logic of the Byzantine Generals Problem and explain how Practical Byzantine Fault Tolerance achieves consensus.",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_all", "values": ["Byzantine", "consensus", "fault"]}
+  },
+  {
+    "prompt_id": "p23",
+    "category": "planning",
+    "task_type": "architecture",
+    "prompt": "Design an end-to-end event-driven architecture for a real-time fraud detection banking platform handling 50k transactions/sec.",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_any", "values": ["Kafka", "event-driven", "latency", "stream processing"]}
+  },
+  {
+    "prompt_id": "p24",
+    "category": "planning",
+    "task_type": "architecture",
+    "prompt": "Develop a multi-phase migration strategy from an on-premise monolithic architecture to microservices on Kubernetes.",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_any", "values": ["strangler", "Kubernetes", "database per service", "CI/CD"]}
+  },
+  {
+    "prompt_id": "p25",
+    "category": "creative",
+    "task_type": "reasoning",
+    "prompt": "Compose a nuanced dialogue between Alan Turing and Ada Lovelace discussing whether modern transformers possess true understanding.",
+    "target_tier": "large",
+    "eval_criteria": {"type": "contains_all", "values": ["Turing", "Lovelace"]}
+  }
 ]

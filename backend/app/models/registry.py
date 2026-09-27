@@ -114,6 +114,105 @@ class ModelRegistry:
         )
         self.register_model(groq_large, is_tier_default=(self.settings.active_provider in ("groq", "hybrid")))
 
+        # 5. Anthropic Claude Models
+        claude_small = ModelMetadata(
+            model_name=self.settings.anthropic_model_small,
+            tier=ModelTier.SMALL,
+            provider="anthropic",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.EXTRACTION.value, ModelCapability.CODE.value],
+            context_length=200000,
+            expected_latency_ms=220.0,
+            resource_requirements={"cloud_api": True, "vendor": "anthropic"},
+            quality_score_avg=0.88,
+            enabled=bool(self.settings.anthropic_api_key),
+            description="Claude 3.5 Haiku: Ultra-fast, highly capable lightweight model for low/medium tasks."
+        )
+        self.register_model(claude_small, is_tier_default=(self.settings.active_provider == "anthropic"))
+
+        claude_large = ModelMetadata(
+            model_name=self.settings.anthropic_model_large,
+            tier=ModelTier.LARGE,
+            provider="anthropic",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.CODE.value, ModelCapability.REASONING.value, ModelCapability.MATH.value],
+            context_length=200000,
+            expected_latency_ms=750.0,
+            resource_requirements={"cloud_api": True, "vendor": "anthropic"},
+            quality_score_avg=0.99,
+            enabled=bool(self.settings.anthropic_api_key),
+            description="Claude 3.5 Sonnet: State-of-the-art coding and architectural reasoning model."
+        )
+        self.register_model(claude_large, is_tier_default=(self.settings.active_provider == "anthropic"))
+
+        # 6. OpenAI Models
+        openai_small = ModelMetadata(
+            model_name=self.settings.openai_model_small,
+            tier=ModelTier.SMALL,
+            provider="openai",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.CODE.value],
+            context_length=128000,
+            expected_latency_ms=250.0,
+            resource_requirements={"cloud_api": True, "vendor": "openai"},
+            quality_score_avg=0.87,
+            enabled=bool(self.settings.openai_api_key),
+            description="OpenAI GPT-4o-mini: Fast and cost-efficient model for lightweight tasks."
+        )
+        self.register_model(openai_small, is_tier_default=(self.settings.active_provider == "openai"))
+
+        openai_large = ModelMetadata(
+            model_name=self.settings.openai_model_large,
+            tier=ModelTier.LARGE,
+            provider="openai",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.CODE.value, ModelCapability.REASONING.value, ModelCapability.MATH.value],
+            context_length=128000,
+            expected_latency_ms=800.0,
+            resource_requirements={"cloud_api": True, "vendor": "openai"},
+            quality_score_avg=0.98,
+            enabled=bool(self.settings.openai_api_key),
+            description="OpenAI GPT-4o: High-capacity flagship reasoning and multimodal model."
+        )
+        # 7. Grok / xAI Models (Primary Cloud Provider)
+        grok_small = ModelMetadata(
+            model_name=self.settings.effective_grok_small,
+            tier=ModelTier.SMALL,
+            provider="xai",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.EXTRACTION.value],
+            context_length=131072,
+            expected_latency_ms=280.0,
+            resource_requirements={"cloud_api": True, "vendor": "xai"},
+            quality_score_avg=0.86,
+            enabled=bool(self.settings.xai_api_key),
+            description=f"Grok Small ({self.settings.effective_grok_small}): Fast cloud model for low complexity tasks."
+        )
+        self.register_model(grok_small, is_tier_default=(self.settings.active_provider == "xai"))
+
+        grok_medium = ModelMetadata(
+            model_name=self.settings.effective_grok_medium,
+            tier=ModelTier.MEDIUM,
+            provider="xai",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.CODE.value],
+            context_length=131072,
+            expected_latency_ms=350.0,
+            resource_requirements={"cloud_api": True, "vendor": "xai"},
+            quality_score_avg=0.91,
+            enabled=bool(self.settings.xai_api_key),
+            description=f"Grok Medium ({self.settings.effective_grok_medium}): Balanced model for code and reasoning."
+        )
+        self.register_model(grok_medium, is_tier_default=(self.settings.active_provider == "xai"))
+
+        grok_large = ModelMetadata(
+            model_name=self.settings.effective_grok_large,
+            tier=ModelTier.LARGE,
+            provider="xai",
+            capabilities=[ModelCapability.GENERAL.value, ModelCapability.CODE.value, ModelCapability.REASONING.value, ModelCapability.MATH.value],
+            context_length=131072,
+            expected_latency_ms=900.0,
+            resource_requirements={"cloud_api": True, "vendor": "xai"},
+            quality_score_avg=0.97,
+            enabled=bool(self.settings.xai_api_key),
+            description=f"Grok Large ({self.settings.effective_grok_large}): Flagship model for complex architecture and deep logic."
+        )
+        self.register_model(grok_large, is_tier_default=(self.settings.active_provider in ("xai", "hybrid")))
+
     def register_model(self, metadata: ModelMetadata, is_tier_default: bool = False):
         """Add or update a model in the registry."""
         self._models[metadata.model_name] = metadata

@@ -19,7 +19,31 @@ class ProviderFactory:
         normalized = provider_type.lower()
 
         if normalized not in self._providers:
-            if normalized == "groq":
+            if normalized in ("xai", "grok"):
+                from backend.app.models.providers.grok import GrokProvider
+                logger.info(f"Initializing GrokProvider at {self.settings.xai_base_url}")
+                self._providers[normalized] = GrokProvider(
+                    api_key=self.settings.xai_api_key,
+                    base_url=self.settings.xai_base_url,
+                    timeout_seconds=60.0,
+                )
+            elif normalized == "openai":
+                from backend.app.models.providers.openai import OpenAIProvider
+                logger.info(f"Initializing OpenAIProvider at {self.settings.openai_base_url}")
+                self._providers["openai"] = OpenAIProvider(
+                    api_key=self.settings.openai_api_key,
+                    base_url=self.settings.openai_base_url,
+                    timeout_seconds=60.0,
+                )
+            elif normalized in ("anthropic", "claude"):
+                from backend.app.models.providers.anthropic import AnthropicProvider
+                logger.info(f"Initializing AnthropicProvider at {self.settings.anthropic_base_url}")
+                self._providers[normalized] = AnthropicProvider(
+                    api_key=self.settings.anthropic_api_key,
+                    base_url=self.settings.anthropic_base_url,
+                    timeout_seconds=60.0,
+                )
+            elif normalized == "groq":
                 logger.info(f"Initializing Groq LPU provider at {self.settings.groq_base_url}")
                 self._providers["groq"] = OpenAICompatibleProvider(
                     api_key=self.settings.groq_api_key,
@@ -27,17 +51,10 @@ class ProviderFactory:
                     timeout_seconds=60.0,
                     provider_name="groq",
                 )
-            elif normalized in ("xai", "grok", "openai"):
-                logger.info(f"Initializing {normalized} provider at {self.settings.xai_base_url}")
-                self._providers[normalized] = OpenAICompatibleProvider(
-                    api_key=self.settings.xai_api_key,
-                    base_url=self.settings.xai_base_url,
-                    timeout_seconds=60.0,
-                    provider_name="xai",
-                )
             else:
-                logger.info(f"Initializing Ollama local provider at {self.settings.ollama_base_url}")
-                self._providers["ollama"] = OllamaProvider(
+                from backend.app.models.providers.local import LocalProvider
+                logger.info(f"Initializing LocalProvider at {self.settings.ollama_base_url}")
+                self._providers["ollama"] = LocalProvider(
                     base_url=self.settings.ollama_base_url,
                     timeout_seconds=self.settings.ollama_timeout_seconds,
                 )
@@ -48,7 +65,11 @@ class ProviderFactory:
         """Resolve the appropriate provider for any given model name via the registry."""
         meta = registry.get_model(model_name)
         if meta:
-            if meta.provider == "groq":
+            if meta.provider in ("anthropic", "claude"):
+                return self.get_provider("anthropic")
+            elif meta.provider == "openai":
+                return self.get_provider("openai")
+            elif meta.provider == "groq":
                 return self.get_provider("groq")
             elif meta.provider in ("xai", "grok"):
                 return self.get_provider("xai")

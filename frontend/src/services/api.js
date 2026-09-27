@@ -64,3 +64,10 @@ export async function runBenchmarkComparison() {
   if (!res.ok) throw new Error('Failed to run benchmark experiment');
   return res.json();
 }
+
+export async function fetchBaselineComparison() {
+  const res = await fetch(`${API_BASE}/api/v1/metrics/baselines`);
+  if (!res.ok) throw new Error('Failed to fetch baseline comparisons');
+  return res.json();
+}
+

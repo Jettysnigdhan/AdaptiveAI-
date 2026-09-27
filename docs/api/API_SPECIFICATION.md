@@ -104,3 +104,34 @@ Runs empirical benchmark comparison across all 5 policies and returns comparativ
 
 ### `GET /api/v1/health`
 Returns gateway operational status and active model provider connectivity.
+
+---
+
+## 5. Universal IDE Drop-in Gateway: `POST /v1/chat/completions`
+Enables **Antigravity**, **Cursor**, **VS Code (Continue/Cline/Roo-Code)**, **Claude Code**, or any OpenAI-compatible client to use AdaptiveRoute as an intelligent auto-switching model proxy.
+
+### Endpoint:
+`POST http://localhost:8000/v1/chat/completions`
+
+### Standard OpenAI Payload:
+```json
+{
+  "model": "adaptive-auto",
+  "messages": [
+    {"role": "system", "content": "You are an expert software developer."},
+    {"role": "user", "content": "Create a responsive React navbar component with Tailwind flexbox styling"}
+  ],
+  "temperature": 0.7,
+  "stream": true
+}
+```
+
+### Auto-Switching Rules Applied to IDE Queries:
+* **Low Complexity Tasks** (variable renaming, simple syntax, docstrings, regex, git commits) $\to$ Auto-switches to **Small Tier** (`allam-2-7b`, `claude-3-5-haiku`, `gpt-4o-mini`, or `qwen2.5:0.5b`).
+* **Frontend UI / Components** (React, JSX, CSS, Tailwind, UI layouts, forms) $\to$ Auto-switches to **Medium Tier** (`qwen/qwen3.8-27b`, `claude-3-5-haiku`, `gpt-4o-mini`, or `qwen2.5-coder:1.5b`).
+* **Complex Backend / Database / Hard Debugging** (PostgreSQL schema, security/auth, concurrency, distributed locks, crash tracebacks) $\to$ Auto-switches to **Large Tier** (`openai/gpt-oss-120b`, `claude-3-5-sonnet`, `gpt-4o`, or `deepseek-r1:8b`).
+
+### Response Headers:
+* `X-Adaptive-Model`: Name of the dynamically chosen model.
+* `X-Adaptive-Tier`: `small`, `medium`, or `large`.
+* `X-Adaptive-Reason`: Explanation for why the model was chosen.
