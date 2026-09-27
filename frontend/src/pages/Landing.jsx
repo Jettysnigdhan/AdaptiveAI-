@@ -522,6 +522,18 @@ function InteractivePlayground({ onEnterApp }) {
 
   const demos = [
     {
+      title: '⚡ Test Downscale: 3*4',
+      prompt: '3*4',
+      tier: 'SMALL',
+      model: 'allam-2-7b / grok-2-mini',
+      requestedModel: 'Claude 3.5 Sonnet',
+      downscaled: true,
+      latency: '206ms',
+      cost: '$0.00001 (Saved 92%)',
+      tokens: 18,
+      output: `12\n\n[AdaptiveRoute Telemetry: Intercepted default client model 'Claude 3.5 Sonnet'. Prompt complexity 0.05 analyzed as trivial arithmetic. Automatically downscaled to lightweight Small Tier, saving 92% cost in 206ms.]`,
+    },
+    {
       title: 'Python Binary Search',
       prompt: 'Implement an in-place binary search function in Python that returns -1 if not found.',
       tier: 'SMALL',
@@ -535,7 +547,7 @@ function InteractivePlayground({ onEnterApp }) {
       title: 'Distributed Event Bus',
       prompt: 'Design an event-driven architecture with idempotent event processing and DLQ for payment systems.',
       tier: 'LARGE',
-      model: 'grok-2',
+      model: 'grok-2 / gpt-oss-120b',
       latency: '512ms',
       cost: '$0.00140',
       tokens: 418,
@@ -680,6 +692,50 @@ function InteractivePlayground({ onEnterApp }) {
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#a1a1aa', fontFamily: "'JetBrains Mono',monospace" }}>{current.tokens}</div>
               </div>
             </div>
+
+            {current.downscaled && (
+              <div style={{
+                marginTop: '12px',
+                background: 'rgba(74, 222, 128, 0.08)',
+                border: '1px solid rgba(74, 222, 128, 0.25)',
+                borderRadius: '8px',
+                padding: '7px 12px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '11px',
+              }}>
+                <span style={{ color: '#4ade80', fontWeight: 600 }}>⚡ Auto-Downscaled: Claude 3.5 Sonnet ➔ Small Tier</span>
+                <span style={{ color: '#a1a1aa', fontFamily: "'JetBrains Mono',monospace" }}>-92% tokens saved</span>
+              </div>
+            )}
+
+            <button
+              onClick={onEnterApp}
+              style={{
+                marginTop: '14px',
+                width: '100%',
+                background: '#fff',
+                color: '#09090b',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '9px 14px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              <span>Launch Live Gateway &amp; Test Any Prompt</span>
+              <span>→</span>
+            </button>
           </div>
         </Card3D>
 
