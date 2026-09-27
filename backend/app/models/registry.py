@@ -221,8 +221,15 @@ class ModelRegistry:
         logger.info(f"Registered model: {metadata.model_name} [{metadata.tier.value}]")
 
     def get_model(self, model_name: str) -> Optional[ModelMetadata]:
-        """Fetch model metadata by its exact model name."""
-        return self._models.get(model_name)
+        """Fetch model metadata by its exact model name or alias."""
+        if model_name in self._models:
+            return self._models[model_name]
+        clean_name = model_name.lower().strip()
+        for k, v in self._models.items():
+            k_low = k.lower()
+            if k_low == clean_name or k_low.startswith(clean_name) or clean_name.startswith(k_low):
+                return v
+        return None
 
     def get_default_model_for_tier(self, tier: ModelTier) -> Optional[ModelMetadata]:
         """Return the default active model for a specific tier."""

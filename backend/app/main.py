@@ -49,6 +49,9 @@ app.include_router(models_router, prefix="/v1")
 app.include_router(metrics_router, prefix="/v1")
 app.include_router(health_router, prefix="/v1")
 
+# Also mount chat_router at root so /messages and /chat/completions work at http://localhost:8000
+app.include_router(chat_router)
+
 
 @app.get("/")
 async def root():

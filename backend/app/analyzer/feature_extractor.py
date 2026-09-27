@@ -170,10 +170,19 @@ class FeatureExtractor:
         signals["database"] = 0.9 if any(w in t for w in ["sql", "postgresql", "database", "schema", "table", "migration", "query", "orm", "nosql", "mongodb"]) else 0.05
 
         # 9. architecture
-        signals["architecture"] = 0.95 if any(w in t for w in ["architecture", "system design", "microservice", "distributed", "scalability", "event-driven", "fault tolerance"]) else 0.05
+        signals["architecture"] = 0.95 if any(w in t for w in ["architect", "system design", "microservice", "distributed", "scalability", "event-driven", "fault tolerance", "consensus", "cluster", "failover", "high availability", "pipeline"]) else 0.05
 
-        # 10. mathematics
-        signals["mathematics"] = 0.9 if features_dict["has_math"] else 0.05
+        # 10. mathematics & simple arithmetic
+        is_simple_arithmetic = (
+            features_dict.get("has_math", 0)
+            and features_dict.get("word_count", 0) <= 8
+            and not any(w in t for w in ["integral", "derivative", "matrix", "vector", "theorem", "proof", "differential", "eigen", "polynomial", "calculus", "latex", "solve for", "equation"])
+        )
+        if is_simple_arithmetic:
+            signals["simple_qa"] = 0.95
+            signals["mathematics"] = 0.15
+        else:
+            signals["mathematics"] = 0.9 if features_dict.get("has_math", 0) else 0.05
 
         # 11. reasoning
         signals["reasoning"] = 0.9 if features_dict["has_reasoning"] else 0.05
@@ -237,15 +246,25 @@ class FeatureExtractor:
         task_signals = self._extract_task_signals(text, raw_dict)
 
         # Heuristic complexity score [0.0 - 1.0]
+        is_simple_arithmetic = (
+            has_math
+            and word_count <= 8
+            and not any(w in text.lower() for w in ["integral", "derivative", "matrix", "vector", "theorem", "proof", "differential", "eigen", "polynomial", "calculus", "latex", "solve for", "equation"])
+        )
+
         complexity = 0.10
         if has_code:
             complexity += 0.30
         if has_reasoning:
             complexity += 0.30
         if has_math:
-            complexity += 0.25
+            complexity += 0.02 if is_simple_arithmetic else 0.25
         if task_signals.get("architecture", 0.0) > 0.8:
-            complexity += 0.30
+            complexity += 0.35
+        if task_signals.get("database", 0.0) > 0.8:
+            complexity += 0.20
+        if task_signals.get("backend", 0.0) > 0.8:
+            complexity += 0.15
         if task_signals.get("debugging", 0.0) > 0.8:
             complexity += 0.20
         if token_est > 80:
@@ -256,6 +275,8 @@ class FeatureExtractor:
             complexity += 0.10
         if task_signals.get("simple_qa", 0.0) > 0.8:
             complexity -= 0.15
+        if is_simple_arithmetic:
+            complexity = 0.05
         if has_summarization and not has_reasoning:
             complexity -= 0.10
 

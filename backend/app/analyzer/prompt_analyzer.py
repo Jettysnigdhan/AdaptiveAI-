@@ -38,14 +38,17 @@ class PromptAnalyzer:
         self._init_encoder()
 
     def _init_encoder(self):
-        """Lazily attempt loading SentenceTransformer; fallback to fast pseudo-semantic vector if offline."""
-        try:
-            from sentence_transformers import SentenceTransformer
-            logger.info(f"Loading SentenceTransformer: {self.model_name}")
-            self._st_model = SentenceTransformer(self.model_name)
-            logger.info("SentenceTransformer loaded successfully.")
-        except Exception as e:
-            logger.warning(f"Could not load SentenceTransformer ({e}). Using deterministic semantic vector fallback.")
+        """Lazily attempt loading SentenceTransformer if enabled; otherwise use fast 384-dim semantic projection."""
+        import os
+        if os.getenv("USE_SENTENCE_TRANSFORMERS", "").lower() in ("true", "1"):
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._st_model = SentenceTransformer(self.model_name, local_files_only=True)
+                logger.info("SentenceTransformer loaded successfully from local cache.")
+            except Exception:
+                self._st_model = None
+        else:
+            # Ultra-fast, zero-overhead deterministic 384-dim projection (sub-millisecond)
             self._st_model = None
 
     def _get_embedding(self, text: str) -> List[float]:

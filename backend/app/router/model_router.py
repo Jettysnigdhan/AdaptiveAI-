@@ -137,6 +137,30 @@ class ModelRouter:
         # ----------------------------------------------------
         # Proposed System: Adaptive ML Router (Quality Prediction & Utility Optimization)
         # ----------------------------------------------------
+        is_trivial = (
+            analysis.complexity_score <= 0.15
+            and analysis.features.task_signals.get("architecture", 0.0) < 0.4
+            and analysis.features.task_signals.get("backend", 0.0) < 0.4
+            and not analysis.features.has_code
+            and not analysis.features.has_reasoning
+        ) or (
+            analysis.features.word_count <= 8
+            and not analysis.features.has_code
+            and not analysis.features.has_reasoning
+            and analysis.features.task_signals.get("architecture", 0.0) < 0.2
+            and analysis.features.task_signals.get("backend", 0.0) < 0.2
+        )
+        if is_trivial:
+            target = registry.get_default_model_for_tier(ModelTier.SMALL)
+            return RoutingDecision(
+                selected_tier=ModelTier.SMALL,
+                selected_model=target.model_name if target else self.settings.model_small,
+                confidence=0.98,
+                policy_name="adaptive_ml",
+                predicted_qualities={"small": 0.98, "medium": 0.99, "large": 0.99},
+                explanation="Selected SMALL: Low-complexity prompt (simple calculation/query) operates with high accuracy on the lightweight tier.",
+            )
+
         predicted_qualities: Dict[str, float] = {}
 
         # 1. Attempt ML model prediction if checkpoint is loaded
