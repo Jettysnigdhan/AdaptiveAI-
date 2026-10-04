@@ -28,6 +28,8 @@ export function CostCalculator() {
   const savingsPercent = costWithout > 0 ? ((monthlySavings / costWithout) * 100).toFixed(1) : "0";
   const annualSavings = monthlySavings * 12;
 
+  const formatNum = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
   return (
     <section className="py-20 border-t border-zinc-800/80 bg-zinc-950 relative overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -52,8 +54,8 @@ export function CostCalculator() {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-zinc-300 font-semibold">Monthly API Requests:</span>
-                <span className="text-[#00f0ff] font-bold text-sm px-2.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
-                  {requests.toLocaleString()} reqs / mo
+                <span suppressHydrationWarning className="text-[#00f0ff] font-bold text-sm px-2.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
+                  {formatNum(requests)} reqs / mo
                 </span>
               </div>
               <input
@@ -137,11 +139,11 @@ export function CostCalculator() {
                 <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
                   Monthly Direct Savings
                 </span>
-                <div className="text-4xl sm:text-5xl font-extrabold font-mono text-emerald-400">
-                  ${Math.round(monthlySavings).toLocaleString()}
+                <div suppressHydrationWarning className="text-4xl sm:text-5xl font-extrabold font-mono text-emerald-400">
+                  ${formatNum(monthlySavings)}
                 </div>
-                <span className="text-xs font-mono text-zinc-400 mt-1 block">
-                  or <strong className="text-white">${Math.round(annualSavings).toLocaleString()}</strong> / year saved
+                <span suppressHydrationWarning className="text-xs font-mono text-zinc-400 mt-1 block">
+                  or <strong className="text-white">${formatNum(annualSavings)}</strong> / year saved
                 </span>
               </div>
 
@@ -150,7 +152,7 @@ export function CostCalculator() {
                 <div>
                   <div className="flex justify-between text-zinc-400 mb-1">
                     <span>Without AdaptiveRoute:</span>
-                    <span className="text-rose-400 font-bold">${Math.round(costWithout).toLocaleString()} / mo</span>
+                    <span suppressHydrationWarning className="text-rose-400 font-bold">${formatNum(costWithout)} / mo</span>
                   </div>
                   <div className="w-full bg-zinc-900 rounded-full h-2">
                     <div className="bg-rose-500/80 h-full rounded-full" style={{ width: "100%" }} />
@@ -160,7 +162,7 @@ export function CostCalculator() {
                 <div>
                   <div className="flex justify-between text-zinc-400 mb-1">
                     <span className="text-[#00f0ff]">With AdaptiveRoute:</span>
-                    <span className="text-emerald-400 font-bold">${Math.round(costWith).toLocaleString()} / mo</span>
+                    <span suppressHydrationWarning className="text-emerald-400 font-bold">${formatNum(costWith)} / mo</span>
                   </div>
                   <div className="w-full bg-zinc-900 rounded-full h-2">
                     <div
