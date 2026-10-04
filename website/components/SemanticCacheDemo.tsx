@@ -11,199 +11,220 @@ import {
   Clock, 
   DollarSign, 
   RefreshCw,
-  Search
+  Search,
+  Sparkles,
+  ChevronRight
 } from "lucide-react";
 
-export function SemanticCacheDemo() {
-  const [activeReq, setActiveReq] = useState<1 | 2>(1);
-  const [isProcessing, setIsProcessing] = useState(false);
+interface CachePair {
+  label: string;
+  query1: string;
+  query2: string;
+  similarity: number;
+  isHit: boolean;
+}
 
-  const triggerRun = (reqNum: 1 | 2) => {
-    setActiveReq(reqNum);
-    setIsProcessing(true);
+const SAMPLE_PAIRS: CachePair[] = [
+  {
+    label: "Networking Protocol",
+    query1: "What is TCP protocol 3-way handshake?",
+    query2: "Explain the TCP three way handshake SYN ACK",
+    similarity: 97.4,
+    isHit: true,
+  },
+  {
+    label: "Algorithm / Python",
+    query1: "How to invert a binary tree in Python recursively",
+    query2: "Python code to reverse a binary tree",
+    similarity: 95.8,
+    isHit: true,
+  },
+  {
+    label: "System Design",
+    query1: "Differences between Raft consensus and Paxos consensus",
+    query2: "Compare Paxos vs Raft in distributed systems",
+    similarity: 94.2,
+    isHit: true,
+  },
+  {
+    label: "Distinct Topics (Miss)",
+    query1: "What is quantum entanglement?",
+    query2: "How does Docker container networking work?",
+    similarity: 32.1,
+    isHit: false,
+  },
+];
+
+export function SemanticCacheDemo() {
+  const [selectedPairIndex, setSelectedPairIndex] = useState(0);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [currentSimilarity, setCurrentSimilarity] = useState(SAMPLE_PAIRS[0].similarity);
+  const [queryInput, setQueryInput] = useState(SAMPLE_PAIRS[0].query2);
+
+  const activePair = SAMPLE_PAIRS[selectedPairIndex];
+
+  const handleSelectPair = (idx: number) => {
+    setSelectedPairIndex(idx);
+    const p = SAMPLE_PAIRS[idx];
+    setQueryInput(p.query2);
+    setIsEvaluating(true);
+
     setTimeout(() => {
-      setIsProcessing(false);
-    }, 700);
+      setCurrentSimilarity(p.similarity);
+      setIsEvaluating(false);
+    }, 400);
   };
+
+  const handleTestMatch = () => {
+    setIsEvaluating(true);
+    setTimeout(() => {
+      // Heuristic: If it has similar keywords
+      const base = activePair.query1.toLowerCase();
+      const input = queryInput.toLowerCase();
+      let sim = 45;
+      if (input.includes("tcp") && base.includes("tcp")) sim = 97.4;
+      else if (input.includes("tree") && base.includes("tree")) sim = 95.8;
+      else if (input.includes("raft") && base.includes("raft")) sim = 94.2;
+      else sim = Math.min(99, Math.max(25, Math.floor(Math.random() * 40) + 50));
+
+      setCurrentSimilarity(sim);
+      setIsEvaluating(false);
+    }, 500);
+  };
+
+  const isHit = currentSimilarity >= 90;
 
   return (
     <section className="py-20 bg-zinc-950 border-t border-zinc-800/80 relative overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mb-12">
-          <p className="text-xs font-mono font-medium tracking-wider text-emerald-400 uppercase mb-2">
-            ZERO-COMPUTE VECTOR CACHING
-          </p>
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono mb-3">
+            <Database className="h-3.5 w-3.5" />
+            <span>INTERACTIVE VECTOR MATCHING</span>
+          </div>
           <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white">
-            Semantic Cache in Action
+            Semantic Vector Cache Simulator
           </h2>
           <p className="mt-3 text-sm sm:text-base text-zinc-400">
-            AdaptiveRoute builds dense vector embeddings for every inbound query. Semantically
-            similar requests are served instantly from memory without waking up expensive models.
+            Compare two semantically similar prompts. Watch how cosine distance triggers instant cache returns without waking up heavy frontier LLMs.
           </p>
         </div>
 
-        {/* Interactive Request Selector */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <button
-            onClick={() => triggerRun(1)}
-            className={`p-4 rounded-xl border text-left transition-all ${
-              activeReq === 1
-                ? "border-zinc-500 bg-zinc-900/90 ring-1 ring-zinc-500"
-                : "border-zinc-800 bg-zinc-950/60 hover:border-zinc-700"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                REQUEST #1 • INITIAL QUERY
-              </span>
-              <span className="text-xs font-mono text-amber-400">Cache Miss</span>
-            </div>
-            <p className="text-sm font-mono text-zinc-200 font-medium">
-              &ldquo;What is TCP?&rdquo;
-            </p>
-            <p className="text-xs text-zinc-400 mt-2">
-              First time seeing this semantic intent. Stored into embedding index after execution.
-            </p>
-          </button>
-
-          <button
-            onClick={() => triggerRun(2)}
-            className={`p-4 rounded-xl border text-left transition-all ${
-              activeReq === 2
-                ? "border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/50 shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)]"
-                : "border-zinc-800 bg-zinc-950/60 hover:border-zinc-700"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-400 border border-emerald-800">
-                REQUEST #2 • PARAPHRASED QUERY
-              </span>
-              <span className="text-xs font-mono text-emerald-400 font-semibold">
-                ✓ Cache Hit (97.4%)
-              </span>
-            </div>
-            <p className="text-sm font-mono text-zinc-200 font-medium">
-              &ldquo;Explain TCP protocol&rdquo;
-            </p>
-            <p className="text-xs text-zinc-400 mt-2">
-              Syntactically different words, but 97.4% semantic cosine similarity. Zero model cost.
-            </p>
-          </button>
+        {/* Quick Sample Selector Tabs */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          {SAMPLE_PAIRS.map((pair, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSelectPair(idx)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all border ${
+                selectedPairIndex === idx
+                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 font-bold shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]"
+                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200 border-zinc-800"
+              }`}
+            >
+              {pair.label} ({pair.similarity}%)
+            </button>
+          ))}
         </div>
 
-        {/* Visual Flow Canvas */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-            {/* Step 1: Input Query */}
-            <div className="lg:col-span-3 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block mb-1">
-                Incoming Prompt
+        {/* Main Interactive Canvas */}
+        <div className="rounded-3xl border border-zinc-800 bg-[#0d1017] p-6 sm:p-10 shadow-2xl relative">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Column: Prompts to compare */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Existing Stored Vector */}
+              <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
+                  1. Previously Cached Prompt (Stored Vector in Index)
+                </span>
+                <p className="font-mono text-xs sm:text-sm text-zinc-200 font-semibold">
+                  &ldquo;{activePair.query1}&rdquo;
+                </p>
+              </div>
+
+              {/* Inbound Prompt (Editable by user) */}
+              <div className="p-4 rounded-2xl border border-emerald-500/40 bg-zinc-950 relative">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold block mb-1">
+                  2. Inbound Query (Type or modify below)
+                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    value={queryInput}
+                    onChange={(e) => setQueryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleTestMatch();
+                    }}
+                    className="w-full rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-emerald-400"
+                  />
+                  <button
+                    onClick={handleTestMatch}
+                    disabled={isEvaluating}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-mono font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_-2px_rgba(16,185,129,0.4)] cursor-pointer"
+                  >
+                    {isEvaluating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : "Compare"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 px-1">
+                <span>Vector Dimension: 384-dim Dense Float</span>
+                <span>Threshold: Cosine &gt; 0.90</span>
+              </div>
+            </div>
+
+            {/* Right Column: Similarity Gauge & Decision */}
+            <div className="lg:col-span-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col items-center text-center justify-between shadow-inner">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-2">
+                Semantic Cosine Similarity
               </span>
-              <p className="font-mono text-xs sm:text-sm font-semibold text-zinc-100">
-                {activeReq === 1 ? '"What is TCP?"' : '"Explain TCP protocol"'}
-              </p>
-              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
-                <Search className="h-3.5 w-3.5 text-[#00f0ff]" />
-                <span>Embedding: 384-dim vector</span>
-              </div>
-            </div>
 
-            {/* Step 2: Semantic Cache Node */}
-            <div className="lg:col-span-4 rounded-xl border border-zinc-700 bg-zinc-900/90 p-4 relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-[#00f0ff]" />
-                  <span className="text-xs font-mono font-bold text-zinc-100">
-                    SEMANTIC CACHE
+              {/* Gauge Circle */}
+              <div className="relative w-40 h-40 flex items-center justify-center my-3">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" stroke="#1f242d" strokeWidth="8" fill="none" />
+                  <motion.circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke={isHit ? "#10b981" : "#f59e0b"}
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray="251.2"
+                    strokeDashoffset={251.2 - (251.2 * currentSimilarity) / 100}
+                    strokeLinecap="round"
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
+                  <span className={`text-3xl font-extrabold ${isHit ? "text-emerald-400" : "text-amber-400"}`}>
+                    {currentSimilarity.toFixed(1)}%
                   </span>
+                  <span className="text-[10px] text-zinc-400">Match Score</span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-400">Threshold: 0.90</span>
               </div>
 
-              {activeReq === 1 ? (
-                <div className="p-3 rounded-lg bg-zinc-950/70 border border-zinc-800 text-xs space-y-1 font-mono">
-                  <div className="flex justify-between text-zinc-400">
-                    <span>Similarity:</span>
-                    <span className="text-zinc-400">0.42 (No match)</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-amber-400">
-                    <span>Status:</span>
-                    <span>CACHE MISS</span>
-                  </div>
-                  <p className="text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80">
-                    Forwarding to Router & Model...
-                  </p>
-                </div>
-              ) : (
-                <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/40 text-xs space-y-1 font-mono">
-                  <div className="flex justify-between text-zinc-300">
-                    <span>Similarity:</span>
-                    <span className="text-emerald-400 font-bold">97.4% match</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-emerald-400">
-                    <span>Status:</span>
-                    <span>✓ CACHE HIT</span>
-                  </div>
-                  <p className="text-[10px] text-zinc-300 pt-1 border-t border-emerald-900/50">
-                    Bypassing model completely
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Step 3: Destination Node (Instant Response OR Model Invocation) */}
-            <div className="lg:col-span-5 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-              {activeReq === 1 ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                      Model Invoked
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                      Standard Flow
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded bg-zinc-900/80 border border-zinc-800 text-xs font-mono space-y-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Model:</span>
-                      <span className="text-zinc-200">Fast (Llama 3.1 8B)</span>
+              {/* Status Outcome */}
+              <div className="w-full pt-3 border-t border-zinc-800/80 font-mono text-xs">
+                {isHit ? (
+                  <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-400 font-semibold space-y-1">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>CACHE HIT — ZERO MODEL BILL</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Total Latency:</span>
-                      <span className="text-zinc-200 font-semibold">121 ms</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Compute Cost:</span>
-                      <span className="text-zinc-200 font-semibold">$0.0010</span>
+                    <div className="text-[11px] font-normal text-zinc-300">
+                      Returned in <strong className="text-emerald-400">14ms</strong> (Saved $0.0040)
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider font-semibold">
-                      Instant Cached Response
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      100% Cost Avoided
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-500/30 text-xs font-mono space-y-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Model:</span>
-                      <span className="text-emerald-400 font-semibold">None (Cache Vector)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Total Latency:</span>
-                      <span className="text-emerald-400 font-bold">14 ms (9x faster)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Compute Cost:</span>
-                      <span className="text-emerald-400 font-bold">$0.0000</span>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-400 font-semibold space-y-1">
+                    <div>CACHE MISS — ROUTING TO MODEL</div>
+                    <div className="text-[11px] font-normal text-zinc-300">
+                      Full model invocation required (~340ms)
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

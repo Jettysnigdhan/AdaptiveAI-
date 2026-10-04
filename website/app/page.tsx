@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { LiveRoutingFlow } from "@/components/LiveRoutingFlow";
+import { StaticVsAdaptiveSection } from "@/components/StaticVsAdaptiveSection";
 import { ValueMetrics } from "@/components/ValueMetrics";
+import { CostCalculator } from "@/components/CostCalculator";
 import { ModelComparisonTable } from "@/components/ModelComparisonTable";
 import { RoutingPipeline } from "@/components/RoutingPipeline";
 import { SemanticCacheDemo } from "@/components/SemanticCacheDemo";
@@ -23,7 +25,13 @@ import {
 } from "lucide-react";
 
 export default function LandingPage() {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 500, y: 300 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
 
   const snippet = `from openai import OpenAI
 
@@ -47,7 +55,18 @@ print(response.headers.get("x-adaptiveroute-selected-model"))`;
   };
 
   return (
-    <div className="min-h-screen bg-[#08090c] text-zinc-100 selection:bg-[#00f0ff]/20 selection:text-white flex flex-col">
+    <div 
+      onMouseMove={handleMouseMove}
+      className="min-h-screen bg-[#08090c] text-zinc-100 selection:bg-[#00f0ff]/20 selection:text-white flex flex-col relative"
+    >
+      {/* Interactive cursor spotlight */}
+      <div
+        className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-300 opacity-60 hidden md:block"
+        style={{
+          background: `radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(0,240,255,0.04), transparent 60%)`,
+        }}
+      />
+
       <Navbar />
 
       <main className="flex-1">
@@ -58,8 +77,8 @@ print(response.headers.get("x-adaptiveroute-selected-model"))`;
 
           <div className="mx-auto max-w-5xl text-center relative z-10">
             {/* Launch pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-900/80 text-xs font-mono text-zinc-300 mb-6 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00f0ff]"></span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/80 text-xs font-mono text-zinc-300 mb-6 backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#00f0ff] animate-pulse"></span>
               <span>AdaptiveRoute 1.2 Enterprise Gateway</span>
               <span className="text-zinc-400">•</span>
               <span className="text-[#00f0ff]">Zero SDK Rewrite</span>
@@ -72,26 +91,25 @@ print(response.headers.get("x-adaptiveroute-selected-model"))`;
 
             {/* Subheadline */}
             <p className="mt-6 text-base sm:text-lg lg:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              The right model for every request — optimized for quality, cost, latency, and
-              complexity. Cut 40%+ of your LLM bill without degrading output quality.
+              Automatically choose the right model for every request — balancing quality, cost, latency, and complexity. Cut 40%+ of your LLM bill without degrading output quality.
             </p>
 
             {/* CTAs */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href="/dashboard/playground"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#00f0ff] hover:bg-[#38bdf8] text-zinc-950 font-bold px-6 py-3 text-sm tracking-wide transition-all shadow-[0_0_25px_-5px_rgba(0,240,255,0.4)]"
+                href="#playground"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#00f0ff] hover:bg-[#38bdf8] text-zinc-950 font-bold px-6 py-3 text-sm tracking-wide transition-all shadow-[0_0_25px_-5px_rgba(0,240,255,0.4)] uppercase font-mono"
               >
-                <span>Try AdaptiveRoute</span>
+                <span>TRY PLAYGROUND</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
 
               <Link
                 href="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 font-semibold px-6 py-3 text-sm tracking-wide transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 font-semibold px-6 py-3 text-sm tracking-wide transition-all uppercase font-mono"
               >
                 <Activity className="h-4 w-4 text-[#00f0ff]" />
-                <span>View Dashboard</span>
+                <span>VIEW DASHBOARD</span>
               </Link>
             </div>
           </div>
@@ -102,22 +120,28 @@ print(response.headers.get("x-adaptiveroute-selected-model"))`;
           </div>
         </section>
 
-        {/* SECTION 2: VALUE METRICS */}
+        {/* SECTION 2: STATIC ROUTING VS ADAPTIVEROUTE */}
+        <StaticVsAdaptiveSection />
+
+        {/* SECTION 3: VALUE METRICS */}
         <ValueMetrics />
 
-        {/* SECTION 3: MODEL COMPARISON */}
+        {/* SECTION 4: INTERACTIVE ROI SAVINGS CALCULATOR */}
+        <CostCalculator />
+
+        {/* SECTION 5: MODEL COMPARISON TABLE ("See the decision.") */}
         <ModelComparisonTable />
 
-        {/* SECTION 4: HOW IT THINKS (PIPELINE) */}
+        {/* SECTION 6: HOW IT THINKS (PIPELINE) */}
         <RoutingPipeline />
 
-        {/* SECTION 5: SEMANTIC CACHE DEMO */}
+        {/* SECTION 7: SEMANTIC CACHE DEMO */}
         <SemanticCacheDemo />
 
-        {/* SECTION 6: INTERACTIVE PLAYGROUND */}
+        {/* SECTION 8: INTERACTIVE PLAYGROUND (5-step animation) */}
         <MiniPlayground />
 
-        {/* SECTION 7: DEVELOPER INTEGRATION SNIPPET (OpenAI SDK Drop-in) */}
+        {/* SECTION 9: DEVELOPER INTEGRATION SNIPPET (OpenAI SDK Drop-in) */}
         <section className="py-20 border-t border-zinc-800/80 bg-zinc-950/80">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-10">
