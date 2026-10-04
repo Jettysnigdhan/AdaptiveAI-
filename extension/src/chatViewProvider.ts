@@ -242,27 +242,44 @@ export class AdaptiveRouteChatViewProvider implements vscode.WebviewViewProvider
       timeout: 60000,
     };
 
+    const reqStartTime = Date.now();
+
     const req = lib.request(options, (res) => {
-      // Capture AdaptiveRoute Telemetry Headers
+      // Capture all AdaptiveRoute Telemetry Headers
       const routedModel = (res.headers["x-adaptive-model"] as string) || "unknown";
       const routedTier = (res.headers["x-adaptive-tier"] as string) || "small";
       const requestedModel = (res.headers["x-adaptive-requested-model"] as string) || baseModel;
       const isDownscaled = (res.headers["x-adaptive-downscaled"] as string) === "true";
+      const isEscalated = (res.headers["x-adaptive-escalated"] as string) === "true";
       const reason = (res.headers["x-adaptive-reason"] as string) || "";
-      const quality = (res.headers["x-adaptive-quality"] as string) || "0.90";
+      const quality = parseFloat((res.headers["x-adaptive-quality"] as string) || "0.90");
+      const confidence = parseFloat((res.headers["x-adaptive-confidence"] as string) || "0.90");
+      const latencyMs = parseFloat((res.headers["x-adaptive-latency"] as string) || "0");
+      const requestId = (res.headers["x-adaptive-request-id"] as string) || "";
 
-      // Inform webview of the routing decision immediately!
+      // Cost estimation (per 1M tokens, approx)
+      // Small: ~$0.20/1M, Medium: ~$0.80/1M, Large: ~$3.00/1M
+      const costPerToken: Record<string, number> = { small: 0.0000002, medium: 0.0000008, large: 0.000003 };
+      const largeCostPerToken = costPerToken["large"];
+      const routedCostPerToken = costPerToken[routedTier] || costPerToken["large"];
+
+      // Inform webview of the routing decision immediately (for top banner)
       this._view?.webview.postMessage({
         type: "routingDecision",
         requestedModel,
         routedModel,
         routedTier,
         isDownscaled,
+        isEscalated,
         reason,
         quality,
+        confidence,
+        latencyMs,
+        requestId,
       });
 
       let buffer = "";
+      let tokenCount = 0;
 
       res.on("data", (chunk: Buffer) => {
         buffer += chunk.toString("utf8");
@@ -282,15 +299,18 @@ export class AdaptiveRouteChatViewProvider implements vscode.WebviewViewProvider
           try {
             const data = JSON.parse(jsonStr);
             if (data.type === "content_block_delta" && data.delta?.text) {
+              tokenCount += Math.ceil(data.delta.text.length / 4);
               this._view?.webview.postMessage({
                 type: "streamChunk",
                 text: data.delta.text,
               });
             } else if (data.choices?.[0]?.delta?.content) {
               // OpenAI format fallback
+              const content = data.choices[0].delta.content;
+              tokenCount += Math.ceil(content.length / 4);
               this._view?.webview.postMessage({
                 type: "streamChunk",
-                text: data.choices[0].delta.content,
+                text: content,
               });
             }
           } catch {}
@@ -298,8 +318,34 @@ export class AdaptiveRouteChatViewProvider implements vscode.WebviewViewProvider
       });
 
       res.on("end", () => {
+        const actualLatency = latencyMs || (Date.now() - reqStartTime);
+        const estimatedTokens = Math.max(tokenCount, 50);
+
+        // Savings vs always using large model
+        const costActual = estimatedTokens * routedCostPerToken;
+        const costLarge = estimatedTokens * largeCostPerToken;
+        const costSaved = Math.max(0, costLarge - costActual);
+        const costSavedPct = costLarge > 0 ? Math.round((costSaved / costLarge) * 100) : 0;
+
         this._view?.webview.postMessage({
           type: "streamDone",
+          // Savings telemetry for inline savings card
+          savings: {
+            routedModel,
+            routedTier,
+            requestedModel,
+            isDownscaled,
+            isEscalated,
+            quality: quality.toFixed(2),
+            confidence: confidence.toFixed(2),
+            latencyMs: Math.round(actualLatency),
+            estimatedTokens,
+            costActual: costActual.toFixed(6),
+            costSaved: costSaved.toFixed(6),
+            costSavedPct,
+            reason,
+            requestId,
+          },
         });
       });
     });
@@ -454,6 +500,22 @@ export class AdaptiveRouteChatViewProvider implements vscode.WebviewViewProvider
           <div class="detail-row reason" id="routingReasonText">
             Simple arithmetic / low complexity query operates with high accuracy on Small tier.
           </div>
+        </div>
+      </div>
+
+      <!-- Session Savings Bar (updates live after each response) -->
+      <div id="sessionSavingsBar" class="session-savings-bar">
+        <span class="session-savings-label">⚡ Session Savings</span>
+        <div class="session-savings-stats">
+          <span class="session-savings-item">
+            <span class="session-savings-val" id="sessionCostSaved">$0.00000</span>
+            <span class="session-savings-lbl">saved</span>
+          </span>
+          <span class="session-savings-divider">·</span>
+          <span class="session-savings-item">
+            <span class="session-savings-val" id="sessionReqCount">0 req</span>
+            <span class="session-savings-lbl">this session</span>
+          </span>
         </div>
       </div>
 

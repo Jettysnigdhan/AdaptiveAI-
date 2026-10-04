@@ -26,8 +26,12 @@
   const routingReasonText = document.getElementById("routingReasonText");
 
   let currentAssistantBubble = null;
+  let currentAssistantWrapper = null;
   let currentAssistantText = "";
   let isGenerating = false;
+  // Session totals
+  let sessionCostSaved = 0;
+  let sessionRequests = 0;
 
   // Initial Health Check and Model Observation
   vscode.postMessage({ type: "checkHealth" });
@@ -106,7 +110,9 @@
 
     // Prepare Assistant Message Bubble
     currentAssistantText = "";
-    currentAssistantBubble = appendMessage("assistant", "Thinking...");
+    const result = appendMessage("assistant", "Thinking...");
+    currentAssistantBubble = result.bubble;
+    currentAssistantWrapper = result.wrapper;
 
     // Send to Extension Host
     const selectedModel = modelSelect.value;
@@ -129,7 +135,84 @@
     chatMessages.appendChild(msgEl);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    return bubble;
+    return { bubble, wrapper: msgEl };
+  }
+
+  function renderSavingsCard(wrapper, savings) {
+    if (!wrapper || !savings) return;
+
+    // Remove any existing savings card on this wrapper
+    const existing = wrapper.querySelector(".savings-card");
+    if (existing) existing.remove();
+
+    const tier = (savings.routedTier || "small").toLowerCase();
+    const tierColor = tier === "small" ? "#00E599" : tier === "medium" ? "#FFB800" : "#FF007A";
+    const tierLabel = tier.toUpperCase();
+
+    const isDownscaled = savings.isDownscaled;
+    const isEscalated = savings.isEscalated;
+    const costSavedPct = savings.costSavedPct || 0;
+    const costSaved = parseFloat(savings.costSaved || 0);
+    const costActual = parseFloat(savings.costActual || 0);
+    const latency = savings.latencyMs || 0;
+    const quality = parseFloat(savings.quality || 0.9);
+
+    // Update session totals
+    sessionCostSaved += costSaved;
+    sessionRequests += 1;
+    const savingsEl = document.getElementById("sessionSavingsBar");
+    if (savingsEl) {
+      document.getElementById("sessionCostSaved").textContent = `$${sessionCostSaved.toFixed(5)}`;
+      document.getElementById("sessionReqCount").textContent = `${sessionRequests} req`;
+    }
+
+    // Quality bar width
+    const qualityPct = Math.round(quality * 100);
+
+    let savingsBadgeHtml = "";
+    if (isDownscaled && costSavedPct > 0) {
+      savingsBadgeHtml = `<span class="savings-badge savings-badge-green">⚡ ${costSavedPct}% cheaper</span>`;
+    } else if (isEscalated) {
+      savingsBadgeHtml = `<span class="savings-badge savings-badge-yellow">↑ Escalated for quality</span>`;
+    } else {
+      savingsBadgeHtml = `<span class="savings-badge savings-badge-purple">🛡️ Flagship tier</span>`;
+    }
+
+    const card = document.createElement("div");
+    card.className = "savings-card";
+    card.innerHTML = `
+      <div class="savings-row savings-row-top">
+        <div class="savings-model-pill" style="border-color: ${tierColor}33; color: ${tierColor}">
+          <span class="savings-tier-dot" style="background:${tierColor}; box-shadow: 0 0 5px ${tierColor}"></span>
+          <span>${escapeHtml(savings.routedModel || "unknown")}</span>
+          <span class="savings-tier-tag" style="color:${tierColor}">${tierLabel}</span>
+        </div>
+        ${savingsBadgeHtml}
+      </div>
+      <div class="savings-metrics">
+        <div class="savings-metric">
+          <span class="savings-metric-val" style="color:#00E599">$${costActual.toFixed(5)}</span>
+          <span class="savings-metric-lbl">cost</span>
+        </div>
+        <div class="savings-metric">
+          <span class="savings-metric-val" style="color:#00F0FF">${latency}ms</span>
+          <span class="savings-metric-lbl">latency</span>
+        </div>
+        <div class="savings-metric">
+          <div class="savings-quality-bar-wrap">
+            <div class="savings-quality-bar-fill" style="width:${qualityPct}%; background: ${quality >= 0.85 ? '#00E599' : quality >= 0.7 ? '#FFB800' : '#FF5A5A'};"></div>
+          </div>
+          <span class="savings-metric-val">${qualityPct}%</span>
+          <span class="savings-metric-lbl">quality</span>
+        </div>
+        <div class="savings-metric">
+          <span class="savings-metric-val" style="color: ${costSavedPct > 0 ? '#00E599' : '#8E929E'}">${costSavedPct > 0 ? '+$' + costSaved.toFixed(5) : '—'}</span>
+          <span class="savings-metric-lbl">saved</span>
+        </div>
+      </div>
+    `;
+    wrapper.appendChild(card);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   function formatMarkdown(text) {
@@ -319,6 +402,10 @@
         isGenerating = false;
         sendBtn.disabled = false;
         promptInput.focus();
+        // Render inline savings card below assistant response
+        if (message.savings) {
+          renderSavingsCard(currentAssistantWrapper, message.savings);
+        }
         break;
 
       case "streamError":
