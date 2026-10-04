@@ -437,22 +437,25 @@ export function simulateAdaptiveRouting(prompt: string): {
     p.includes("write a function") ||
     wordCount > 30;
 
+  const charSum = prompt.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const offset = charSum % 7;
+
   let complexityScore = 20;
   let reasoningScore = 25;
   let contextScore = Math.min(Math.round(wordCount * 1.5) + 15, 95);
   let costSensitivity = 80;
 
   if (hasHighReasoning || wordCount > 80) {
-    complexityScore = Math.min(85 + Math.floor(Math.random() * 12), 99);
-    reasoningScore = Math.min(88 + Math.floor(Math.random() * 10), 99);
+    complexityScore = Math.min(88 + offset, 99);
+    reasoningScore = Math.min(90 + offset, 99);
     costSensitivity = 35;
   } else if (hasModerateReasoning || wordCount > 15) {
-    complexityScore = 55 + Math.floor(Math.random() * 20);
-    reasoningScore = 60 + Math.floor(Math.random() * 18);
+    complexityScore = 60 + offset * 2;
+    reasoningScore = 65 + offset;
     costSensitivity = 60;
   } else {
-    complexityScore = 15 + Math.floor(Math.random() * 15);
-    reasoningScore = 18 + Math.floor(Math.random() * 15);
+    complexityScore = 18 + offset;
+    reasoningScore = 20 + offset;
     costSensitivity = 88;
   }
 
@@ -491,7 +494,7 @@ export function simulateAdaptiveRouting(prompt: string): {
     provider = "Anthropic";
     reason = "High reasoning and structural depth detected. Advanced model needed for zero-shot correctness.";
     cost = 0.0165;
-    latencyMs = 790 + Math.floor(Math.random() * 90);
+    latencyMs = 820 + offset * 5;
     confidence = 98;
   } else if (complexityScore >= 45) {
     selectedTier = "balanced";
@@ -500,7 +503,7 @@ export function simulateAdaptiveRouting(prompt: string): {
     provider = "Anthropic / OpenAI";
     reason = "Moderate complexity with clear domain boundaries. Balanced tier saves 74% cost with near-identical quality.";
     cost = 0.0036;
-    latencyMs = 320 + Math.floor(Math.random() * 45);
+    latencyMs = 335 + offset * 3;
     confidence = 93;
   } else {
     selectedTier = "fast";
@@ -509,7 +512,7 @@ export function simulateAdaptiveRouting(prompt: string): {
     provider = "Groq / Meta";
     reason = "Low computational requirement. Fast sub-150ms model delivers full answer with minimal carbon & cost.";
     cost = 0.0009;
-    latencyMs = 110 + Math.floor(Math.random() * 25);
+    latencyMs = 112 + offset * 2;
     confidence = 96;
   }
 
