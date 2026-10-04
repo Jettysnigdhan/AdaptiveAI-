@@ -6,6 +6,7 @@ from backend.app.core.config import get_settings
 from backend.app.core.logging import logger
 from backend.app.database.database import init_db
 from backend.app.api.routes import chat_router, models_router, metrics_router, health_router
+from backend.app.api.routes.semantic_router_bridge import router as semantic_bridge_router
 
 
 @asynccontextmanager
@@ -51,6 +52,10 @@ app.include_router(health_router, prefix="/v1")
 
 # Also mount chat_router at root so /messages and /chat/completions work at http://localhost:8000
 app.include_router(chat_router)
+
+# Mount Semantic Cost-Aware Router endpoints (/answer, /stats, /cache, /evaluation, /benchmark/run)
+app.include_router(semantic_bridge_router)
+app.include_router(semantic_bridge_router, prefix="/api/v1")
 
 
 @app.get("/")

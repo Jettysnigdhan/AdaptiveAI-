@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { AdaptiveRouteChatViewProvider } from "./chatViewProvider";
+import { AdaptiveLanguageModelProvider } from "./languageModelProvider";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("AdaptiveRoute extension activated.");
@@ -83,10 +84,51 @@ export function activate(context: vscode.ExtensionContext) {
     100
   );
   statusBarItem.command = "adaptiveroute.openChat";
-  statusBarItem.text = "$(zap) AdaptiveRoute";
-  statusBarItem.tooltip = "AdaptiveRoute Gateway: Dynamic ML Model Router & Auto-Downscaler";
+  statusBarItem.text = "$(zap) AdaptiveRoute: Observing...";
+  statusBarItem.tooltip = "AdaptiveRoute Gateway: Connecting to observe models spectrum...";
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
+
+  let hasAnnounced = false;
+  chatProvider.onDidObserveModels = (summary: any) => {
+    const smallest = summary.smallest_model?.model_name || "small";
+    const largest = summary.largest_model?.model_name || "large";
+    const smallestShort = smallest.split("/").pop();
+    const largestShort = largest.split("/").pop();
+    const count = summary.enabled_models_count || summary.total_models || 0;
+    const provider = (summary.active_provider || "gateway").toUpperCase();
+
+    statusBarItem.text = `$(zap) Adaptive: ${smallestShort} ↔ ${largestShort}`;
+    const md = new vscode.MarkdownString();
+    md.isTrusted = true;
+    md.appendMarkdown(`**AdaptiveRoute AI Gateway Active [${provider}]**\n\n`);
+    md.appendMarkdown(`• **Lowest / Smallest:** \`${smallest}\` (Small Tier • Sub-second)\n\n`);
+    md.appendMarkdown(`• **Highest / Largest:** \`${largest}\` (Flagship Tier • Max Reasoning)\n\n`);
+    md.appendMarkdown(`• **Observed Models Active:** ${count} registered models\n\n`);
+    md.appendMarkdown(`*Click to open AdaptiveRoute Prompt-Observing Chat View.*`);
+    statusBarItem.tooltip = md;
+
+    if (!hasAnnounced) {
+      hasAnnounced = true;
+      vscode.window.showInformationMessage(
+        `AdaptiveRoute: Observed ${count} models on ${provider}. Auto-switching between Lowest (${smallestShort}) and Highest (${largestShort}).`
+      );
+    }
+  };
+
+  // 7. Register Native Language Model Chat Provider
+  // Surfaces "Adaptive AI (Auto-Routed Free Models)" into the editor's native model selector
+  const lm = (vscode as any).lm;
+  if (lm && typeof lm.registerLanguageModelChatProvider === "function") {
+    try {
+      const lmProvider = new AdaptiveLanguageModelProvider(context.extensionUri);
+      const disposable = lm.registerLanguageModelChatProvider("adaptiveroute", lmProvider);
+      context.subscriptions.push(disposable);
+      console.log("AdaptiveRoute registered as native Language Model Chat Provider ('adaptiveroute').");
+    } catch (err: any) {
+      console.warn("Could not register LanguageModelChatProvider:", err.message);
+    }
+  }
 }
 
 export function deactivate() {

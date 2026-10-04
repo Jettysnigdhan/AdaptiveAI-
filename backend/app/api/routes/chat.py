@@ -182,18 +182,23 @@ async def openai_chat_completions(
         selected_tier = meta.tier if meta else ModelTier.MEDIUM
         decision_explanation = f"Direct model specified by client: {selected_model}"
         confidence = 1.0
+    elif force_tier:
+        target_model = registry.get_default_model_for_tier(ModelTier.from_str(force_tier))
+        selected_tier = ModelTier.from_str(force_tier)
+        selected_model = target_model.model_name if target_model else "small"
+        decision_explanation = f"Direct tier specified: {force_tier}"
+        confidence = 1.0
     else:
-        analysis = analyzer.analyze(full_prompt)
-        decision = model_router.route(analysis, force_policy="rule" if not model_router._ml_model else None)
-        if force_tier:
-            target_model = registry.get_default_model_for_tier(ModelTier.from_str(force_tier))
-            selected_model = target_model.model_name if target_model else decision.selected_model
-            selected_tier = ModelTier.from_str(force_tier)
-        else:
-            selected_model = decision.selected_model
-            selected_tier = decision.selected_tier
-        decision_explanation = decision.explanation
-        confidence = decision.confidence
+        # LLM Grok/Groq evaluation: Auto-switch between SMALLEST and LARGEST available models
+        from backend.app.router.llm_complexity_evaluator import llm_complexity_evaluator
+        eval_res = await llm_complexity_evaluator.evaluate_complexity(full_prompt)
+        selected_tier = eval_res.tier
+        selected_model = eval_res.selected_model
+        decision_explanation = (
+            f"LLM Grok/Groq evaluation ({eval_res.reason}) -> Auto-switched to {selected_tier.value.upper()} "
+            f"[{selected_model}] between available models [{eval_res.smallest_model} | {eval_res.largest_model}]."
+        )
+        confidence = 0.95 if selected_tier == ModelTier.SMALL else 0.98
 
     provider = provider_factory.get_provider_for_model(selected_model)
     gen_req = GenerationRequest(
@@ -494,20 +499,28 @@ async def anthropic_messages(
         decision_explanation = f"Direct model specified: {selected_model}"
         confidence = 1.0
         predicted_qualities = {selected_tier.value: 1.0}
+    elif force_tier:
+        selected_tier = ModelTier.from_str(force_tier)
+        target_model = registry.get_default_model_for_tier(selected_tier)
+        selected_model = target_model.model_name if target_model else "small"
+        decision_explanation = f"Direct tier specified: {force_tier}"
+        confidence = 1.0
+        predicted_qualities = {selected_tier.value: 1.0}
     else:
-        # Evaluate prompt semantics
-        analysis = analyzer.analyze(full_prompt)
-        decision = model_router.route(analysis, force_policy="rule" if not model_router._ml_model else None)
-        if force_tier:
-            target_model = registry.get_default_model_for_tier(ModelTier.from_str(force_tier))
-            selected_model = target_model.model_name if target_model else decision.selected_model
-            selected_tier = ModelTier.from_str(force_tier)
-        else:
-            selected_model = decision.selected_model
-            selected_tier = decision.selected_tier
-        decision_explanation = decision.explanation
-        confidence = decision.confidence
-        predicted_qualities = decision.predicted_qualities
+        # LLM Grok/Groq evaluation: Auto-switch between SMALLEST and LARGEST available models
+        from backend.app.router.llm_complexity_evaluator import llm_complexity_evaluator
+        eval_res = await llm_complexity_evaluator.evaluate_complexity(full_prompt)
+        selected_tier = eval_res.tier
+        selected_model = eval_res.selected_model
+        decision_explanation = (
+            f"LLM Grok/Groq evaluation ({eval_res.reason}) -> Auto-switched to {selected_tier.value.upper()} "
+            f"[{selected_model}] between available models [{eval_res.smallest_model} | {eval_res.largest_model}]."
+        )
+        confidence = 0.95 if selected_tier == ModelTier.SMALL else 0.98
+        predicted_qualities = {
+            "small": 0.95 if selected_tier == ModelTier.SMALL else 0.25,
+            "large": 0.98 if selected_tier == ModelTier.LARGE else 0.35,
+        }
 
     provider = provider_factory.get_provider_for_model(selected_model)
     gen_req = GenerationRequest(
@@ -522,7 +535,7 @@ async def anthropic_messages(
     message_id = f"msg_{uuid.uuid4().hex[:24]}"
     is_downscaled = (
         selected_tier != ModelTier.LARGE
-        and any(h in req_model for h in ["large", "sonnet", "opus", "gpt-4", "deepseek-r1"])
+        and any(h in req_model for h in ["large", "sonnet", "opus", "gpt-4", "deepseek-r1", "adaptive"])
     )
 
     common_headers = {

@@ -271,57 +271,57 @@ function CylinderCarousel3D() {
   const panels = [
     {
       num: '01',
-      title: 'Sub-150ms Decision',
-      sub: 'Embedding + Classifier',
-      tag: 'SPEED',
-      accent: '#4ade80',
-      detail: 'Predicts minimum viable model tier in ~138ms before the first LLM token is ever fetched.',
-      badge: '138ms LATENCY',
+      title: 'Vector Semantic Cache',
+      sub: 'Qdrant + MiniLM-L6-v2',
+      tag: 'CACHE',
+      accent: '#00f0ff',
+      detail: 'Dense 384-dimensional cosine similarity matching serves repeated & paraphrased queries at $0.00 cost in <15ms.',
+      badge: '0.000$ / HIT',
     },
     {
       num: '02',
-      title: '74% Cost Reduction',
-      sub: 'Token arbitrage',
+      title: '48.0% Cost Reduction',
+      sub: 'Empirical Benchmark',
       tag: 'SAVINGS',
-      accent: '#38bdf8',
-      detail: '80% of routine coding and queries run on Small or Medium tiers without sacrificing output fidelity.',
-      badge: '0.0004$ / REQ',
+      accent: '#34d399',
+      detail: 'Empirical benchmark against 100% large model baseline proved 48.0% cost reduction with identical output quality (0.988 vs 0.987).',
+      badge: '-48.0% API COST',
     },
     {
       num: '03',
-      title: 'Quality-Aware Ladder',
-      sub: 'Dynamic cascading',
-      tag: 'ACCURACY',
-      accent: '#f59e0b',
-      detail: 'Responses are verified against threshold τ. If output is degraded, it escalates to Large automatically.',
-      badge: 'τ = 0.82 FLOOR',
+      title: 'Tier Escalation Engine',
+      sub: 'Small → Large Auto-Recovery',
+      tag: 'ESCALATE',
+      accent: '#f43f5e',
+      detail: 'Monitors small model completions for weak phrases, empty answers, or missing code, automatically escalating to Large tier.',
+      badge: 'ZERO SILENT FAILS',
     },
     {
       num: '04',
-      title: 'IDE Native Gateway',
-      sub: 'Antigravity / Cursor / VS Code',
-      tag: 'PROTOCOL',
+      title: 'Explainable Deterministic Routing',
+      sub: 'Complexity & Keywords',
+      tag: 'ROUTER',
       accent: '#818cf8',
-      detail: 'Point your editor to localhost:8000/v1 with model adaptive-auto. Zero SDK rewriting required.',
-      badge: 'OPENAI COMPAT',
+      detail: 'Deterministic keyword heuristics (design, architecture, explain) route queries with auditable reason logs.',
+      badge: 'EXPLAINABLE AI',
     },
     {
       num: '05',
-      title: '15 Semantic Signals',
-      sub: 'Continuous ML features',
-      tag: 'ANALYZER',
+      title: 'Threshold Tuning Sweep',
+      sub: 'Precision vs Recall (0.85-0.97)',
+      tag: 'EMPIRICAL',
       accent: '#a78bfa',
-      detail: 'Code block counts, math keywords, reasoning markers, and token entropy feed the routing classifier.',
-      badge: 'XGBOOST + EMBED',
+      detail: 'Evaluated on 50 paraphrase & 50 near-miss pairs. Threshold of 0.90 drops false-hit rate to 10% for strict safety.',
+      badge: 'τ = 0.90 TUNED',
     },
     {
       num: '06',
-      title: 'Multi-Provider Cascading',
-      sub: 'Grok, Groq, Anthropic, OpenAI',
-      tag: 'PROVIDERS',
-      accent: '#ec4899',
-      detail: 'Failover gracefully across model providers when upstream APIs rate-limit or experience latency spikes.',
-      badge: 'FAILOVER SAFE',
+      title: 'SQLite Audit Telemetry',
+      sub: 'Tokens, Cost, Latency Percentiles',
+      tag: 'TELEMETRY',
+      accent: '#fbbf24',
+      detail: 'Real-time telemetry recording exact input/output tokens, p50/p95 latency percentiles, and quality scores.',
+      badge: 'P50/P95 AUDIT',
     },
   ];
 
@@ -511,6 +511,253 @@ function CylinderCarousel3D() {
   );
 }
 
+// ─── Section 2B: LLM Grok Prompt Complexity & Smallest/Largest Auto-Switch ───
+function LLMGrokAutoSwitchSection({ onEnterApp, onTryNow }) {
+  const [activePromptType, setActivePromptType] = useState('simple');
+
+  const scenarios = {
+    simple: {
+      prompt: "What is 3 * 4?",
+      tag: "SMALL",
+      tagColor: "#4ade80",
+      grokScore: 0.05,
+      grokReason: "Trivial single-step arithmetic query requiring minimal compute.",
+      routedModel: "openai/gpt-oss-20b (or grok-2-mini)",
+      tierRole: "SMALLEST Available Model",
+      latency: "186ms",
+      savings: "92% cost cut",
+      description: "Fast sub-second inference. No need to burn expensive tokens on flagship models for basic calculations.",
+    },
+    complex: {
+      prompt: "Design an end-to-end event-driven microservices architecture for a real-time fraud detection banking platform with Kafka, Redis, and Raft consensus.",
+      tag: "LARGE",
+      tagColor: "#f59e0b",
+      grokScore: 0.95,
+      grokReason: "Requires deep distributed systems architecture, event streaming, and consensus reasoning.",
+      routedModel: "openai/gpt-oss-120b (or grok-2 / claude-3-5-sonnet)",
+      tierRole: "LARGEST Available Model",
+      latency: "High-throughput compute",
+      savings: "Zero Quality Loss",
+      description: "Dedicated to solving deep architectural patterns, distributed transactions, and multi-file codebases.",
+    },
+  };
+
+  const curr = scenarios[activePromptType];
+
+  return (
+    <div style={{ maxWidth: '980px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(99, 102, 241, 0.12)',
+          border: '1px solid rgba(129, 140, 248, 0.3)',
+          borderRadius: '20px',
+          padding: '4px 14px',
+          fontSize: '11px',
+          color: '#818cf8',
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          marginBottom: '14px',
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 8px #818cf8' }} />
+          LLM Prompt Complexity Engine
+        </div>
+        <h2 style={{ fontSize: '38px', fontWeight: 600, letterSpacing: '-0.025em', color: '#f4f4f5', margin: '0 0 12px' }}>
+          Grok-Powered Search & Binary Auto-Switch
+        </h2>
+        <p style={{ fontSize: '15px', color: '#a1a1aa', maxWidth: '620px', margin: '0 auto', lineHeight: 1.6 }}>
+          Never manually toggle models again. AdaptiveRoute observes every prompt with a sub-second Grok/Groq LLM judge, automatically searching prompt complexity and routing between the <strong>SMALLEST</strong> and <strong>LARGEST</strong> available models.
+        </p>
+      </div>
+
+      {/* Selector Tabs */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
+        <button
+          onClick={() => setActivePromptType('simple')}
+          style={{
+            background: activePromptType === 'simple' ? 'rgba(74, 222, 128, 0.14)' : 'rgba(255, 255, 255, 0.04)',
+            border: `1px solid ${activePromptType === 'simple' ? 'rgba(74, 222, 128, 0.4)' : 'rgba(255, 255, 255, 0.08)'}`,
+            borderRadius: '10px',
+            color: activePromptType === 'simple' ? '#4ade80' : '#a1a1aa',
+            padding: '10px 18px',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s',
+          }}
+        >
+          <span>⚡ Simple Prompt ("What is 3*4?")</span>
+        </button>
+        <button
+          onClick={() => setActivePromptType('complex')}
+          style={{
+            background: activePromptType === 'complex' ? 'rgba(245, 158, 11, 0.14)' : 'rgba(255, 255, 255, 0.04)',
+            border: `1px solid ${activePromptType === 'complex' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255, 255, 255, 0.08)'}`,
+            borderRadius: '10px',
+            color: activePromptType === 'complex' ? '#f59e0b' : '#a1a1aa',
+            padding: '10px 18px',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s',
+          }}
+        >
+          <span>🛡️ Complex Architecture Prompt</span>
+        </button>
+      </div>
+
+      {/* Visualizer Card */}
+      <Card3D intensity={5}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1.1fr 1fr',
+          gap: '24px',
+          background: '#0d0d12',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '18px',
+          padding: '28px',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+        }} className="feat-grid">
+          {/* Left Column: Prompt Input & Grok Judge Readout */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: '#71717a', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                1. Inbound Prompt via Gateway / API
+              </div>
+              <div style={{
+                background: '#070709',
+                border: '1px solid rgba(255, 255, 255, 0.07)',
+                borderRadius: '10px',
+                padding: '14px 16px',
+                fontSize: '13px',
+                color: '#f4f4f5',
+                fontFamily: "'JetBrains Mono', monospace",
+                lineHeight: 1.5,
+              }}>
+                "{curr.prompt}"
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: '#818cf8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818cf8', display: 'inline-block' }} />
+                2. Grok / Groq Sub-Second LLM Complexity Search
+              </div>
+              <div style={{
+                background: 'rgba(99, 102, 241, 0.06)',
+                border: '1px solid rgba(129, 140, 248, 0.22)',
+                borderRadius: '10px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#a1a1aa' }}>Complexity Score:</span>
+                  <span style={{ fontSize: '15px', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: curr.tagColor }}>
+                    {curr.grokScore.toFixed(2)} / 1.00
+                  </span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#d4d4d8', fontStyle: 'italic', lineHeight: 1.45 }}>
+                  "{curr.grokReason}"
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '4px', fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: '#71717a' }}>
+                  <span>Evaluation Time: <strong style={{ color: '#e4e4e7' }}>{curr.latency}</strong></span>
+                  <span>•</span>
+                  <span>Cost Impact: <strong style={{ color: '#4ade80' }}>{curr.savings}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Binary Auto-Switch Dispatch */}
+          <div style={{
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+            border: `1px solid ${curr.tagColor}38`,
+            borderRadius: '14px',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{
+                  background: `${curr.tagColor}22`,
+                  color: curr.tagColor,
+                  border: `1px solid ${curr.tagColor}44`,
+                  padding: '4px 12px',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.04em',
+                }}>
+                  {curr.tag === 'SMALL' ? '⚡ AUTO-SWITCHED: SMALLEST' : '🛡️ AUTO-SWITCHED: LARGEST'}
+                </span>
+                <span style={{ fontSize: '11px', color: '#71717a', fontFamily: "'JetBrains Mono', monospace" }}>
+                  3. Dynamic Target
+                </span>
+              </div>
+
+              <div style={{ fontSize: '12px', color: '#a1a1aa', marginBottom: '6px' }}>
+                {curr.tierRole}
+              </div>
+              <div style={{ fontSize: '21px', fontWeight: 700, color: '#fff', fontFamily: "'JetBrains Mono', monospace", marginBottom: '14px', letterSpacing: '-0.02em' }}>
+                {curr.routedModel}
+              </div>
+              <p style={{ fontSize: '13px', color: '#a1a1aa', lineHeight: 1.55, margin: 0 }}>
+                {curr.description}
+              </p>
+            </div>
+
+            <div style={{
+              marginTop: '24px',
+              paddingTop: '18px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px',
+            }}>
+              <span style={{ fontSize: '11px', color: '#71717a' }}>
+                Ready to test via Web Gateway or REST API
+              </span>
+              <button
+                onClick={onEnterApp}
+                style={{
+                  background: '#fff',
+                  color: '#09090b',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '7px 16px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                Launch Playground →
+              </button>
+            </div>
+          </div>
+        </div>
+      </Card3D>
+    </div>
+  );
+}
+
 // ─── Section 3: DialKit-Style Split Interactive Tuning Playground ─────────────
 function InteractivePlayground({ onEnterApp, onTryNow }) {
   const [selectedPrompt, setSelectedPrompt] = useState(0);
@@ -524,43 +771,43 @@ function InteractivePlayground({ onEnterApp, onTryNow }) {
 
   const demos = [
     {
-      title: 'Test Downscale: 3*4',
+      title: 'LLM Grok Evaluator: Simple (3*4)',
       isDownscale: true,
-      prompt: '3*4',
+      prompt: 'What is 3*4?',
       tier: 'SMALL',
-      model: 'gpt-oss-20b / grok-2-mini',
-      requestedModel: 'Claude 3.5 Sonnet',
+      model: 'openai/gpt-oss-20b / grok-2-mini',
+      requestedModel: 'Claude 3.5 Sonnet / High Default',
       downscaled: true,
       latency: '206ms',
       cost: '$0.00001 (Saved 92%)',
       tokens: 18,
-      output: `12\n\n[AdaptiveRoute Telemetry: Intercepted default client model 'Claude 3.5 Sonnet'. Prompt complexity 0.05 analyzed as trivial arithmetic. Automatically downscaled to lightweight Small Tier, saving 92% cost in 206ms.]`,
+      output: `12\n\n[LLM Complexity Judge (Grok/Groq)]: Observed prompt complexity score: 0.05 (trivial arithmetic). Automatically switched to SMALLEST available model, cutting 92% token costs in 206ms.`,
+    },
+    {
+      title: 'LLM Grok Evaluator: Complex Architecture',
+      prompt: 'Design an end-to-end event-driven architecture for a real-time fraud detection banking platform with Kafka, Redis, and microservices.',
+      tier: 'LARGE',
+      model: 'openai/gpt-oss-120b / grok-2',
+      latency: '512ms',
+      cost: '$0.00140',
+      tokens: 418,
+      output: `[LLM Complexity Judge (Grok/Groq)]: Observed prompt complexity score: 0.95 (multi-step distributed system architecture). Automatically switched to LARGEST available flagship model.\n\n1. Ingestion: Kafka partitioned by account_id to maintain strict ordering.\n2. Idempotency: Redis SETNX with transaction hash + 24h TTL before execution.\n3. Outbox Pattern: PostgreSQL transactional write + Debezium CDC stream.\n4. Failure Handling: Dead Letter Queue (DLQ) with exponential backoff & alerts.`,
     },
     {
       title: 'Python Binary Search',
       prompt: 'Implement an in-place binary search function in Python that returns -1 if not found.',
       tier: 'SMALL',
-      model: 'grok-2-mini',
+      model: 'openai/gpt-oss-20b / grok-2-mini',
       latency: '124ms',
       cost: '$0.00004',
       tokens: 92,
       output: `def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1`,
     },
     {
-      title: 'Distributed Event Bus',
-      prompt: 'Design an event-driven architecture with idempotent event processing and DLQ for payment systems.',
-      tier: 'LARGE',
-      model: 'grok-2 / gpt-oss-120b',
-      latency: '512ms',
-      cost: '$0.00140',
-      tokens: 418,
-      output: `1. Ingestion: Kafka partitioned by account_id to maintain strict ordering.\n2. Idempotency: Redis SETNX with transaction hash + 24h TTL before execution.\n3. Outbox Pattern: PostgreSQL transactional write + Debezium CDC stream.\n4. Failure Handling: Dead Letter Queue (DLQ) with exponential backoff & alerts.`,
-    },
-    {
       title: 'Explain TCP 3-Way Handshake',
       prompt: 'Explain SYN, SYN-ACK, and ACK in simple developer terms with packet flags.',
       tier: 'SMALL',
-      model: 'grok-2-mini',
+      model: 'openai/gpt-oss-20b / grok-2-mini',
       latency: '138ms',
       cost: '$0.00006',
       tokens: 140,
@@ -947,12 +1194,12 @@ function AnimatedArchPipeline() {
   }, []);
 
   const steps = [
-    { name: 'AI Client', sub: 'IDE / Editor / Agent', detail: 'Sends standard chat request to localhost:8000/v1' },
-    { name: 'Adaptive Gateway', sub: 'Reverse Proxy', detail: 'Interprets model: adaptive-auto and streams response' },
-    { name: 'Prompt Analyzer', sub: '15 Feature Signals', detail: 'Computes embeddings, token counts & code density in ~15ms' },
-    { name: 'ML Classifier', sub: 'Utility Optimization', detail: 'Routes to minimum viable model tier' },
-    { name: 'Tier Execution', sub: 'Small / Medium / Large', detail: 'Fetches inference from configured provider' },
-    { name: 'Quality Evaluator', sub: 'Score τ ≥ 0.82', detail: 'Auto-escalates if response fails quality standard' },
+    { name: 'AI Client', sub: 'IDE / Editor / Agent', detail: 'Sends prompt to localhost:8000/v1 without manual model toggling' },
+    { name: 'Grok Complexity Judge', sub: 'LLM Prompt Search', detail: 'Uses Grok/Groq fast model to evaluate prompt complexity in <300ms' },
+    { name: 'Binary Auto-Switch', sub: 'Smallest ↔ Largest', detail: 'Dynamically routes to Smallest model for simple queries, Largest for complex queries' },
+    { name: 'LPU / Cloud Execution', sub: 'Groq / xAI / Local', detail: 'Executes high-throughput streaming inference' },
+    { name: 'Quality Evaluator', sub: 'Score τ ≥ 0.82', detail: 'Evaluates architectural completeness and response quality' },
+    { name: 'Editor Stream', sub: 'Telemetry Header', detail: 'Streams tokens + dynamic model downscaling metadata directly back to editor' },
   ];
 
   return (
@@ -1527,6 +1774,421 @@ function Tag({ text }) {
   );
 }
 
+// ─── 2 Ways to Use & Setup Section ───────────────────────────────────────────
+function ThreeStepSetupSection({ onEnterApp, onOpenSetupModal }) {
+  const [copiedKey, setCopiedKey] = useState(null);
+
+  const copyText = (txt, key) => {
+    navigator.clipboard.writeText(txt);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  return (
+    <section id="how-to-use" style={{ padding: '80px 24px', maxWidth: '1240px', margin: '0 auto' }}>
+      <FadeIn>
+        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(99, 102, 241, 0.12)',
+            border: '1px solid rgba(129, 140, 248, 0.3)',
+            borderRadius: '20px',
+            padding: '4px 14px',
+            fontSize: '11px',
+            color: '#818cf8',
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: '14px',
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 8px #818cf8' }} />
+            COMPLETE USAGE &amp; SETUP
+          </div>
+          <h2 style={{ fontSize: '38px', fontWeight: 600, letterSpacing: '-0.025em', color: '#f8fafc', margin: '0 0 14px' }}>
+            3 Core Interfaces: Playground, Dashboard &amp; Gateway
+          </h2>
+          <p style={{ fontSize: '15px', color: '#a1a1aa', maxWidth: '680px', margin: '0 auto', lineHeight: 1.6 }}>
+            Run instant queries in the Web Playground, inspect real-time metrics in the Telemetry Dashboard, or connect any external agent via OpenAI-compatible proxy.
+          </p>
+        </div>
+
+        {/* 3 Step Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
+          
+          {/* Card 1: Web Playground */}
+          <div
+            style={{
+              background: 'rgba(18, 20, 29, 0.85)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: '16px',
+              padding: '28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.55)';
+              e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.18)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.25)';
+              e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)';
+            }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #818cf8, rgba(99, 102, 241, 0.2))' }} />
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8', border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                  METHOD 1 &bull; BROWSER
+                </span>
+                <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600 }}>&bull; RUNNING NOW</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+                Interactive Web Playground
+              </h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '20px' }}>
+                Zero setup needed. Both backend (port 8000) and frontend (port 5173) are running right now.
+              </p>
+
+              {/* Step checklist */}
+              <div style={{ background: '#0a0b10', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '16px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <span style={{ color: '#818cf8', fontWeight: 700 }}>1.</span>
+                  <span>Click <strong>"Launch Web Gateway"</strong> below to open the Chat Playground.</span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <span style={{ color: '#818cf8', fontWeight: 700 }}>2.</span>
+                  <span>Click preset <em>"What is TCP congestion control?"</em> (Routes &amp; caches vector in Qdrant).</span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <span style={{ color: '#818cf8', fontWeight: 700 }}>3.</span>
+                  <span>Click paraphrase <em>"Can you explain how TCP congestion control works?"</em> &rarr; Instant <strong>&lt;15ms CACHE HIT ($0.00)</strong>!</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => onEnterApp('chat')}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '13px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.45)',
+                  color: '#818cf8',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 8px 24px rgba(99, 102, 241, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                  transition: 'all 0.18s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(99, 102, 241, 0.16) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.7)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 12px 30px rgba(99, 102, 241, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
+                }}
+              >
+                <span>Launch Web Gateway &rarr;</span>
+              </button>
+              <button
+                onClick={onOpenSetupModal}
+                style={{
+                  padding: '12px 16px',
+                  fontSize: '13px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#e4e4e7',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <span>Full Guide &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: 1-Click IDE Extension (.vsix) */}
+          <div
+            style={{
+              background: 'rgba(18, 20, 29, 0.85)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: '16px',
+              padding: '28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.55)';
+              e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.18)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.25)';
+              e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)';
+            }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #818cf8, rgba(99, 102, 241, 0.2))' }} />
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8', border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                  METHOD 2 &bull; IDE EXTENSION
+                </span>
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>VS CODE / ANTIGRAVITY</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+                Sidebar Chat &amp; Telemetry
+              </h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '20px' }}>
+                Install the packaged .vsix extension for automated model routing and built-in sidebar telemetry.
+              </p>
+
+              {/* Code snippet / info box matching Card 3 */}
+              <div style={{ background: '#0a0b10', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px 14px', marginBottom: '24px', fontSize: '11px', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#71717a' }}>VSIX Package:</span>
+                  <span style={{ color: '#818cf8' }}>adaptiveroute-ai-1.0.0.vsix</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#71717a' }}>Sidebar Views:</span>
+                  <span style={{ color: '#cbd5e1' }}>💬 Chat + 📊 Telemetry</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#71717a' }}>Install CLI:</span>
+                  <span style={{ color: '#818cf8' }}>code --install-extension "..."</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => copyText('code --install-extension "extension/adaptiveroute-ai-1.0.0.vsix"', 'vsix')}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '13px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.45)',
+                  color: '#818cf8',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 8px 24px rgba(99, 102, 241, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                  transition: 'all 0.18s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(99, 102, 241, 0.16) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.7)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 12px 30px rgba(99, 102, 241, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
+                }}
+              >
+                <span>{copiedKey === 'vsix' ? 'Copied to Clipboard!' : 'Copy Install Command'}</span>
+              </button>
+              <button
+                onClick={onOpenSetupModal}
+                style={{
+                  padding: '12px 16px',
+                  fontSize: '13px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#e4e4e7',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <span>Full Guide &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card 3: Universal REST & OpenAI API Gateway */}
+          <div
+            style={{
+              background: 'rgba(18, 20, 29, 0.85)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: '16px',
+              padding: '28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.55)';
+              e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.18)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.25)';
+              e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)';
+            }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #818cf8, rgba(99, 102, 241, 0.2))' }} />
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8', border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                  METHOD 3 &bull; DROP-IN PROXY
+                </span>
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>OPENAI API</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+                Universal REST &amp; OpenAI API Gateway
+              </h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '20px' }}>
+                Point Python SDK, cURL, or any AI assistant/agent to your local router gateway with zero code changes.
+              </p>
+
+              {/* Code snippet */}
+              <div style={{ background: '#0a0b10', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px 14px', marginBottom: '24px', fontSize: '11px', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#71717a' }}>Base URL:</span>
+                  <span style={{ color: '#818cf8' }}>http://localhost:8000/v1</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#71717a' }}>Model:</span>
+                  <span style={{ color: '#818cf8' }}>adaptive-auto</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#71717a' }}>Direct Route:</span>
+                  <span style={{ color: '#cbd5e1' }}>POST http://localhost:8000/answer</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => copyText('http://localhost:8000/v1', 'url')}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '13px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.45)',
+                  color: '#818cf8',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 8px 24px rgba(99, 102, 241, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                  transition: 'all 0.18s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(99, 102, 241, 0.16) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.7)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 12px 30px rgba(99, 102, 241, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
+                }}
+              >
+                <span>{copiedKey === 'url' ? 'Copied to Clipboard!' : 'Copy Gateway URL'}</span>
+              </button>
+              <button
+                onClick={onOpenSetupModal}
+                style={{
+                  padding: '12px 16px',
+                  fontSize: '13px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#e4e4e7',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <span>Full Guide &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </FadeIn>
+    </section>
+  );
+}
+
 // ─── Section Heading ──────────────────────────────────────────────────────────
 function SectionHead({ eyebrow, title, sub, center = true }) {
   return (
@@ -1693,9 +2355,14 @@ export default function Landing({ onEnterApp }) {
             Let AI Choose<br />the Model.
           </h1>
 
-          <p style={{ fontSize: '16px', color: '#71717a', lineHeight: '1.68', maxWidth: '480px', margin: '0 auto 48px', fontWeight: 400 }}>
-            AdaptiveRoute intelligently routes every request to the minimum model capability required — and escalates automatically when the task demands more reasoning.
+          <p style={{ fontSize: '16px', color: '#71717a', lineHeight: '1.68', maxWidth: '540px', margin: '0 auto 28px', fontWeight: 400 }}>
+            AdaptiveRoute observes your prompt using a sub-second Grok/Groq LLM judge — automatically switching between the <strong>SMALLEST</strong> and <strong>LARGEST</strong> available models in Cursor, Antigravity, and VS Code.
           </p>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: '20px', padding: '5px 14px', fontSize: '12px', color: '#4ade80', fontFamily: "'JetBrains Mono',monospace", marginBottom: '36px' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
+            ⚡ LLM Grok Complexity Judge • Auto-Switches Smallest ↔ Largest Available
+          </div>
 
           <div className="hero-btns" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <button onClick={() => setShowSetupModal(true)} style={{ background: '#fff', color: '#09090b', border: 'none', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
@@ -1707,10 +2374,10 @@ export default function Landing({ onEnterApp }) {
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}>
               Live Web Chat →
             </button>
-            <a href="#showcase" style={{ color: '#71717a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 400, textDecoration: 'none', transition: 'all 0.15s' }}
+            <a href="#llm-grok-engine" style={{ color: '#71717a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', padding: '12px 24px', fontSize: '14px', fontWeight: 400, textDecoration: 'none', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#e4e4e7'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
               onMouseLeave={e => { e.currentTarget.style.color = '#71717a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
-              Explore 3D Engine
+              Grok Auto-Switch Demo ↓
             </a>
           </div>
         </div>
@@ -1720,6 +2387,13 @@ export default function Landing({ onEnterApp }) {
       <section id="showcase">
         <FadeIn>
           <CylinderCarousel3D />
+        </FadeIn>
+      </section>
+
+      {/* ── LLM GROK COMPLEXITY & BINARY AUTO-SWITCH SECTION ─────────────── */}
+      <section id="llm-grok-engine" style={{ padding: pad, paddingBottom: '140px' }}>
+        <FadeIn>
+          <LLMGrokAutoSwitchSection onEnterApp={onEnterApp} onTryNow={() => setShowSetupModal(true)} />
         </FadeIn>
       </section>
 
@@ -1901,6 +2575,9 @@ print(response.choices[0].message.content)`} />
           </Card3D>
         </FadeIn>
       </section>
+
+      {/* ── 2 WAYS TO USE & SETUP SECTION ───────────────────────────── */}
+      <ThreeStepSetupSection onEnterApp={onEnterApp} onOpenSetupModal={() => setShowSetupModal(true)} />
 
       {/* ── FINAL CTA ─────────────────────────────────────────────────────── */}
       <section style={{ padding: pad, paddingBottom: '140px', maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>

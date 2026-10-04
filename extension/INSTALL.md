@@ -47,28 +47,31 @@ If you want to edit the extension code and test live:
 
 ---
 
-## 🎯 How to Use the Extension in Chat
+## 🎯 How It Works Upon Launch in VS Code / Antigravity
 
-1. Click the **AdaptiveRoute** icon in the sidebar.
-2. Ensure your backend is running (`http://localhost:8000`). The green status pill will display **`ONLINE`**.
-3. In the model dropdown, select your default high model:
-   ```text
-   Claude 3.5 Sonnet (Default High)
-   ```
-4. **Test Downscaling**:
-   - Type `3*4` and press Enter.
-   - **Watch the Live Telemetry Banner**:
-     - Client Requested: `claude-3-5-sonnet`
-     - Routed To: `[SMALL] gpt-oss-20b` (or `grok-2-mini` / `claude-3-5-haiku`)
-     - Badge: `⚡ Downscaled (-90% cost, 206ms)`
-     - Result: `12`
-5. **Test Flagship Retention**:
-   - Ask a complex architecture or multi-file coding task:
-     `"Architect a high-throughput event streaming cluster with Raft consensus and failover in Rust"`
-   - **Watch the Live Telemetry Banner**:
-     - Client Requested: `claude-3-5-sonnet`
-     - Routed To: `[LARGE] Flagship Tier (Preserved)`
-     - Quality: `0.98`
+1. **Automatic Model Observation**:
+   - The moment the extension launches, it queries the AdaptiveRoute Gateway (`GET /api/v1/models/summary`).
+   - It **observes all registered models**, identifies the **Lowest/Smallest Model** (e.g. `openai/gpt-oss-20b` or `qwen2.5:0.5b`), and the **Highest/Largest Model** (e.g. `openai/gpt-oss-120b` or `deepseek-r1:8b`).
+   - It renders the **Observed Model Spectrum Card** at the top of the sidebar.
+   - It updates the VS Code status bar item:
+     ```text
+     ⚡ Adaptive: gpt-oss-20b ↔ gpt-oss-120b
+     ```
+   - Hovering over the status bar item displays the active provider, lowest model, highest model, and total active model count.
+
+2. **⚡ Prompt-Observing Auto-Switching Agent**:
+   - Keep the mode set to **`⚡ Adaptive Auto (Switches between Lowest & Highest)`**.
+   - Type simple queries (`3*4`, `"hi"`, or `"write hello world"`):
+     - The Grok complexity judge classifies the prompt as **low complexity**.
+     - Auto-switches directly to the **Lowest/Smallest model** (`gpt-oss-20b` or local Ollama), which are **100% free**, saving ~90% cost and running at ~250ms.
+   - Type complex multi-step queries (`"Architect a distributed consensus engine in Rust"`):
+     - The Grok judge classifies the prompt as **high complexity**.
+     - Auto-switches directly to the **Highest/Largest model** (`gpt-oss-120b` or flagship), preserving maximum reasoning power.
+
+3. **🤖 Native Language Model Provider (`languageModelChatProviders`)**:
+   - The extension registers **`Adaptive AI (Auto-Routed Free Models)`** (`adaptive-auto`) with the editor's Language Model Chat API.
+   - Any AI chat interface or assistant querying extension language models can select **`Adaptive AI`** directly.
+   - When requests arrive, AdaptiveRoute intercepts and dynamically routes them to the fastest free models (`gpt-oss-20b` on Groq / local Ollama `qwen2.5:0.5b`).
 
 ---
 
@@ -80,3 +83,17 @@ You can highlight any code in your editor and right-click:
 - **AdaptiveRoute: Fix Bugs in Selection**
 
 The code will be sent straight to the sidebar chat, automatically classified, and routed to the optimal tier!
+
+---
+
+## 📊 Built-In Telemetry & Observability Dashboard
+
+Once you open the AdaptiveRoute sidebar, click the **"📊 Telemetry Dashboard"** tab at the top. The dashboard runs natively in your IDE:
+
+1. **Cost per Request Timeline**: Real-time visual timeline bars showing $0.00 for cache hits and ~$0.0002 for small models.
+2. **Cache Hit Rate**: Percentage of queries served instantly by Qdrant vector semantic cache with zero model egress.
+3. **Route Split Distribution**: Segmented multi-color distribution bar showing split between Cache, Small Model, Large Model, and Escalated requests.
+4. **p50 and p95 Latency Percentiles**: Compares sub-15ms cache hits and fast tier (p50) against tail reasoning requests (p95).
+5. **Quality Score Per Route Over Time**: Continuous quality ratings (Cache: 0.98, Small: 0.89, Large: 0.97, Escalated: 0.95).
+6. **Recent Inferences Audit Log**: Live audit list recorded into SQLite displaying route, tier, tokens, cost, and latency for every query.
+

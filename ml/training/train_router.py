@@ -52,10 +52,16 @@ def train_and_evaluate():
 
     print(f"Dataset matrix shape: {X.shape}, Labels: {np.unique(y, return_counts=True)}")
 
-    # Model 1: Logistic Regression
-    lr = LogisticRegression(max_iter=1000, C=1.0, random_state=42)
-    # Model 2: Random Forest
-    rf = RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42)
+    # Warn about small dataset
+    if len(data) < 50:
+        print(f"⚠️  WARNING: Very small training dataset ({len(data)} samples). Consider adding more benchmark prompts.")
+        print(f"   Current feature dimension ({X.shape[1]}) may lead to overfitting.")
+
+    # Model 1: Logistic Regression with regularization for small datasets
+    lr = LogisticRegression(max_iter=2000, C=0.5, random_state=42, penalty='l2')
+    # Model 2: Random Forest with conservative settings for small datasets
+    rf = RandomForestClassifier(n_estimators=50, max_depth=4, min_samples_split=5,
+                               min_samples_leaf=2, random_state=42)
 
     cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 

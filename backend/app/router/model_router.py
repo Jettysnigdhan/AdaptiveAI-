@@ -202,7 +202,7 @@ class ModelRouter:
         # Candidate tiers meeting the quality threshold
         qual_small = predicted_qualities.get("small", 0.0)
         qual_medium = predicted_qualities.get("medium", 0.0)
-        qual_large = predicted_qualities.get("large", 0.95)
+        qual_large = predicted_qualities.get("large", 0.0)
 
         # Baseline expected latencies & token estimates
         latencies = {"small": 250.0, "medium": 350.0, "large": 850.0}
@@ -231,6 +231,11 @@ class ModelRouter:
         target_model = registry.get_default_model_for_tier(chosen_tier)
         model_name = target_model.model_name if target_model else self.settings.model_small
         conf = predicted_qualities.get(chosen_tier.value, 0.85)
+
+        # Log detailed decision information for debugging
+        logger.info(f"Router decision - Mode: {mode}, Threshold: {threshold}")
+        logger.info(f"Predicted qualities - Small: {qual_small:.3f}, Medium: {qual_medium:.3f}, Large: {qual_large:.3f}")
+        logger.info(f"Selected tier: {chosen_tier.value}, Model: {model_name}, Confidence: {conf:.3f}")
 
         return RoutingDecision(
             selected_tier=chosen_tier,

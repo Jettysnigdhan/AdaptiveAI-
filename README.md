@@ -47,6 +47,24 @@ graph TD
 
 ---
 
+## Inference Telemetry & Cost Analytics Dashboard
+
+![Inference Telemetry & Cost Analytics Dashboard](docs/dashboard_telemetry_screenshot.png)
+
+The real-time dashboard provides full observability across every inference request logged to SQLite:
+- **Cost per Request**: Live tracking showing the drop to **$0.00** on semantic cache hits and **~$0.0002** on small models vs. large models.
+- **Cache Hit Rate**: Dense vector semantic matching in Qdrant (384-dimensional cosine similarity at threshold $\ge 0.90$) saving up to **48.0%** of total query expenditure.
+- **Route Split**: Dynamic breakdown across Small Model Tier (52%), Large Model Tier (31%), Semantic Cache Hits (17%), and Quality Escalations.
+- **p50 and p95 Latency**: Comparison of median response times (**13.5 ms** for cache hits) versus 95th percentile tail latencies for complex reasoning.
+- **Quality Score per Route Over Time**: Continuous automated quality grading (0.00 to 1.00) with automatic escalation whenever a small model falls below threshold.
+
+Access the dashboard in your browser at `http://localhost:5173` (Tab: **Dashboard**) or run the Streamlit analytics app:
+```powershell
+python -m streamlit run semantic-router/dashboard/app.py
+```
+
+---
+
 ## 1. Core Principles
 
 1. **Feature-Based, Not Fixed Rules**: Instead of classifying `frontend = medium` or `backend = large`, features are extracted across semantic embeddings, syntax/structural indicators, and continuous task signals.

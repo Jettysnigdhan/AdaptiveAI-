@@ -1,13 +1,44 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Sliders, RefreshCw, AlertCircle, Bot, User, Copy, Check, Trash2, Download, Zap, ShieldCheck, ArrowUpRight } from 'lucide-react';
-import { sendOpenAIChat } from '../services/api';
-import RoutingDetailsDrawer from '../components/RoutingInfo/RoutingDetailsDrawer';
+import { Send, Zap, Sliders, RefreshCw, AlertCircle, Bot, User, Copy, Check, Trash2, ShieldCheck, ArrowRight, CornerDownLeft, Sparkles } from 'lucide-react';
+import { sendAnswerQuery, clearCache } from '../services/api';
 import SleekZap from '../components/SleekZap';
 
-const PRESET_PROMPTS = [
-  { label: 'Test Downscale: 3*4', text: '3*4', tag: 'SMALL', isDownscale: true, desc: 'Auto-downscale from Claude 3.5 Sonnet to Small tier (~200ms, -90% cost)' },
-  { label: 'Coding (Medium Tier)', text: 'Write a Python function to check for balanced parentheses using a stack.', tag: 'MEDIUM', desc: 'Standard code synthesis' },
-  { label: 'Architecture (Large Tier)', text: 'Architect a high-performance distributed streaming engine with Raft consensus and Byzantine fault tolerance in Rust.', tag: 'LARGE', desc: 'Preserves Large Flagship Tier' },
+const DEMO_PROMPTS = [
+  {
+    title: '1. Initial Query (Cache Miss)',
+    text: 'What is TCP congestion control?',
+    tag: 'INITIAL',
+    desc: 'Evaluates complexity -> routes to model -> stores dense vector in Qdrant',
+    color: '#818cf8',
+  },
+  {
+    title: '2. Paraphrase (⚡ Cache Hit)',
+    text: 'Can you explain how TCP congestion control works?',
+    tag: 'CACHE HIT',
+    desc: 'Cosine similarity >= 0.90 -> Instant $0.00 cached completion (<15ms)',
+    color: '#00f0ff',
+  },
+  {
+    title: '3. Simple Query (Small Model)',
+    text: 'What is the capital of France?',
+    tag: 'SMALL TIER',
+    desc: 'Short query heuristic -> routes to fast, low-cost Small Model',
+    color: '#10b981',
+  },
+  {
+    title: '4. Complex Architecture (Large Model)',
+    text: 'Design an event-driven microservices architecture for distributed financial transactions with Kafka and Redis.',
+    tag: 'LARGE TIER',
+    desc: 'Architecture keywords -> routes to reasoning Large Model',
+    color: '#f59e0b',
+  },
+  {
+    title: '5. Quality Escalation Demo',
+    text: 'Implement a complete quicksort algorithm in Python with test cases.',
+    tag: 'ESCALATION',
+    desc: 'Small model output inspected -> if weak or missing code, escalates to Large Model',
+    color: '#ec4899',
+  }
 ];
 
 export default function Chat() {
@@ -15,21 +46,19 @@ export default function Chat() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Welcome to AdaptiveRoute! Even if you select a high default model like Claude 3.5 Sonnet, AdaptiveRoute reads prompt semantics: simple queries like "3*4" are automatically downscaled to fast, cost-efficient models.',
+      content: 'Welcome to the Semantic Cost-Aware LLM Router!\n\nThis inference layer combines:\n- ⚡ **Dense Vector Semantic Caching** (Qdrant + MiniLM) for instant $0.00 responses\n- 🎯 **Deterministic Routing** (Small vs Large Model tier)\n- ⚠️ **Quality-Based Escalation** when small models produce weak completions\n\nTry sending **"What is TCP congestion control?"** and then its paraphrase **"Can you explain how TCP congestion control works?"** to witness zero-cost semantic caching!',
       metadata: null,
     }
   ]);
   const [inputPrompt, setInputPrompt] = useState('');
-  const [clientModel, setClientModel] = useState('claude-3-5-sonnet');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [clearingCache, setClearingCache] = useState(false);
+  const [cacheClearMsg, setCacheClearMsg] = useState(null);
 
-  // Settings / Overrides
-  const [showConfig, setShowConfig] = useState(false);
-  const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(1024);
-  const [forceTier, setForceTier] = useState('');
+  // Router Overrides
+  const [forceRoute, setForceRoute] = useState(''); // '' | 'small' | 'large'
 
   const messagesEndRef = useRef(null);
 
@@ -40,6 +69,20 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  const handleClearCache = async () => {
+    setClearingCache(true);
+    setCacheClearMsg(null);
+    try {
+      await clearCache();
+      setCacheClearMsg('Semantic cache flushed successfully!');
+      setTimeout(() => setCacheClearMsg(null), 3500);
+    } catch (e) {
+      setCacheClearMsg('Cache clear failed: ' + e.message);
+    } finally {
+      setClearingCache(false);
+    }
+  };
 
   const handleSubmit = async (e, customPrompt = null) => {
     e?.preventDefault();
@@ -54,22 +97,18 @@ export default function Chat() {
       id: Date.now().toString(),
       role: 'user',
       content: promptText,
-      requestedModel: clientModel,
     };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const result = await sendOpenAIChat({
-        prompt: promptText,
-        model: clientModel,
-        temperature,
-        maxTokens,
-        forceTier: forceTier || null,
+      const result = await sendAnswerQuery({
+        query: promptText,
+        force_route: forceRoute || null,
       });
 
       const assistantMsg = {
-        id: result.request_id || Date.now().toString(),
+        id: Date.now().toString() + '-resp',
         role: 'assistant',
         content: result.response,
         metadata: result,
@@ -78,455 +117,298 @@ export default function Chat() {
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
       console.error(err);
-      setError(err.message || 'An error occurred during inference.');
+      setError(err.message || 'Inference call failed. Ensure the server is running on http://localhost:8000');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopy = (id, text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    });
-  };
-
-  const handleClearHistory = () => {
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content: 'Conversation cleared. Send a new prompt to test AdaptiveRoute.',
-        metadata: null,
-      }
-    ]);
-  };
-
-  const handleExportChat = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(messages, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `adaptiveroute_chat_${Date.now()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  const getTierColor = (tier) => {
-    const t = (tier || '').toUpperCase();
-    if (t === 'SMALL') return '#4ade80';
-    if (t === 'MEDIUM') return '#38bdf8';
-    return '#f59e0b';
+  const copyToClipboard = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)' }}>
-      {/* Top Model Selector & Header Bar */}
-      <div style={{
-        background: '#111114',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '12px',
-        padding: '12px 18px',
-        marginBottom: '16px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '12px',
-      }}>
-        {/* Client Model Selector Dropdown */}
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      {/* Top Controls & Banner */}
+      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '0.8rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-            Client Default Model:
-          </span>
-          <select
-            value={clientModel}
-            onChange={(e) => setClientModel(e.target.value)}
-            style={{
-              background: '#09090b',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '8px',
-              padding: '6px 12px',
-              fontSize: '0.84rem',
-              color: '#fff',
-              outline: 'none',
-              cursor: 'pointer',
-              fontFamily: "'JetBrains Mono',monospace",
-            }}
-          >
-            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet (Default High Tier)</option>
-            <option value="claude-3-5-haiku">Claude 3.5 Haiku</option>
-            <option value="gpt-4o">OpenAI GPT-4o (High Tier)</option>
-            <option value="gpt-4o-mini">OpenAI GPT-4o-mini</option>
-            <option value="grok-2">xAI Grok-2</option>
-            <option value="grok-2-mini">xAI Grok-2-mini</option>
-            <option value="deepseek-r1:8b">DeepSeek R1 (8B)</option>
-            <option value="adaptive-auto">Adaptive Auto Router</option>
-          </select>
-        </div>
-
-        {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={() => setShowConfig(!showConfig)}
-            style={{
-              background: showConfig ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: showConfig ? '#818cf8' : '#a1a1aa',
-              borderRadius: '8px',
-              padding: '6px 12px',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            <Sliders size={14} />
-            <span>Options</span>
-          </button>
-
-          <button
-            onClick={handleClearHistory}
-            title="Clear Chat History"
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#71717a',
-              borderRadius: '8px',
-              padding: '6px 10px',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#71717a'; }}
-          >
-            <Trash2 size={14} />
-          </button>
-
-          <button
-            onClick={handleExportChat}
-            title="Export JSON Trace"
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#71717a',
-              borderRadius: '8px',
-              padding: '6px 10px',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#e4e4e7'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#71717a'; }}
-          >
-            <Download size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Preset Prompts Strip with 3*4 Test */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '0.8rem', color: '#71717a', fontWeight: 600 }}>Try:</span>
-        {PRESET_PROMPTS.map((p, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSubmit(null, p.text)}
-            style={{
-              background: idx === 0 ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255, 255, 255, 0.04)',
-              border: idx === 0 ? '1px solid rgba(74, 222, 128, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '8px',
-              padding: '6px 12px',
-              fontSize: '0.78rem',
-              color: idx === 0 ? '#4ade80' : '#d4d4d8',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: idx === 0 ? 600 : 400,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = idx === 0 ? '#4ade80' : '#818cf8'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = idx === 0 ? 'rgba(74, 222, 128, 0.35)' : 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.transform = 'none'; }}
-          >
-            {p.isDownscale && <SleekZap size={13} variant="emerald" />}
-            <span>{p.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Expandable Controls Shelf */}
-      {showConfig && (
-        <div style={{
-          background: '#111114',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '10px',
-          padding: '16px 20px',
-          marginBottom: '16px',
-          display: 'flex',
-          gap: '24px',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-        }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '8px',
+            background: 'rgba(0, 240, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <SleekZap size={18} variant="cyan" />
+          </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#71717a', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-              Tier Override
-            </label>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Interactive Inference Playground</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Test vector similarity matching, complexity routing, and automatic escalation live.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Force Route Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>Routing Mode:</span>
             <select
-              value={forceTier}
-              onChange={(e) => setForceTier(e.target.value)}
-              style={{ background: '#09090b', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '0.85rem' }}
+              value={forceRoute}
+              onChange={(e) => setForceRoute(e.target.value)}
+              style={{ padding: '6px 12px', fontSize: '0.82rem', background: '#131622', border: '1px solid var(--border)', borderRadius: '8px' }}
             >
-              <option value="">Auto ML Router (Recommended)</option>
-              <option value="small">Force Small Tier</option>
-              <option value="medium">Force Medium Tier</option>
-              <option value="large">Force Large Tier</option>
+              <option value="">Auto (Cost-Aware Router)</option>
+              <option value="small">Force Small Model Tier</option>
+              <option value="large">Force Large Model Tier</option>
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#71717a', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-              Temperature ({temperature})
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1.5"
-              step="0.1"
-              value={temperature}
-              onChange={(e) => setTemperature(parseFloat(e.target.value))}
-              style={{ width: '120px' }}
-            />
-          </div>
+          {/* Clear Cache Button */}
+          <button
+            onClick={handleClearCache}
+            disabled={clearingCache}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 14px', borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#f87171', fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s ease'
+            }}
+            title="Clear all Qdrant vector points to test fresh cache misses"
+          >
+            <Trash2 size={14} />
+            <span>{clearingCache ? 'Clearing...' : 'Clear Cache'}</span>
+          </button>
+        </div>
+      </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#71717a', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-              Max Tokens ({maxTokens})
-            </label>
-            <input
-              type="number"
-              min="64"
-              max="4096"
-              step="64"
-              value={maxTokens}
-              onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-              style={{ background: '#09090b', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '6px', width: '100px', padding: '6px 10px', fontSize: '0.85rem' }}
-            />
-          </div>
+      {cacheClearMsg && (
+        <div style={{
+          padding: '10px 16px', borderRadius: '10px',
+          background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)',
+          color: '#34d399', fontSize: '0.85rem'
+        }}>
+          {cacheClearMsg}
         </div>
       )}
 
+      {/* Preset Demo Prompts */}
+      <div>
+        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600 }}>
+          Interactive Architecture Presets:
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '10px' }}>
+          {DEMO_PROMPTS.map((p, idx) => (
+            <div
+              key={idx}
+              onClick={() => handleSubmit(null, p.text)}
+              style={{
+                background: 'rgba(18, 20, 29, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.07)',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = p.color;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+                e.currentTarget.style.transform = 'none';
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f1f5f9' }}>{p.title}</span>
+                <span style={{
+                  fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                  background: `${p.color}20`, color: p.color, border: `1px solid ${p.color}40`
+                }}>
+                  {p.tag}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', lineHeight: 1.4 }}>
+                {p.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Messages Thread Container */}
-      <div style={{
-        flex: 1,
+      <div className="glass-panel" style={{
+        minHeight: '440px',
+        maxHeight: '620px',
         overflowY: 'auto',
+        padding: '24px',
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
-        paddingRight: '8px',
-        marginBottom: '16px',
       }}>
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              maxWidth: msg.role === 'user' ? '80%' : '94%',
-              alignItems: 'flex-start'
-            }}>
-              {/* Role Avatar */}
+        {messages.map((msg) => {
+          const isUser = msg.role === 'user';
+          const meta = msg.metadata;
+
+          return (
+            <div
+              key={msg.id}
+              style={{
+                display: 'flex',
+                gap: '14px',
+                flexDirection: isUser ? 'row-reverse' : 'row',
+                alignItems: 'flex-start'
+              }}
+            >
+              {/* Avatar */}
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                background: msg.role === 'user' ? 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)' : '#111114',
-                border: '1px solid rgba(255,255,255,0.1)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: isUser ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'rgba(0, 240, 255, 0.15)',
+                border: isUser ? '1px solid #818cf8' : '1px solid rgba(0, 240, 255, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                {msg.role === 'user' ? <User size={16} color="#fff" /> : <Bot size={16} color="#818cf8" />}
+                {isUser ? <User size={18} color="#fff" /> : <Bot size={18} color="#00f0ff" />}
               </div>
 
-              {/* Message Content Bubble */}
-              <div style={{ flex: 1 }}>
-                {/* Dynamic Downscaling Alert Card */}
-                {msg.role === 'assistant' && msg.metadata?.downscaled && (
-                  <div style={{
-                    background: 'linear-gradient(90deg, rgba(74, 222, 128, 0.12), rgba(99, 102, 241, 0.06))',
-                    border: '1px solid rgba(74, 222, 128, 0.35)',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#4ade80', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <SleekZap size={14} variant="emerald" /> DOWNSCALED BY PROMPT SEMANTICS (-90% Cost)
-                      </span>
-                      <span style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: "'JetBrains Mono',monospace" }}>
-                        {msg.metadata.latency_ms?.toFixed(0)}ms
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#e4e4e7', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ color: '#a1a1aa' }}>Client requested:</span>
-                      <code style={{ background: '#09090b', padding: '1px 5px', borderRadius: '4px', color: '#f43f5e' }}>{msg.metadata.requested_model}</code>
-                      <span>➔</span>
-                      <span style={{ color: '#a1a1aa' }}>Routed to:</span>
-                      <code style={{ background: '#09090b', padding: '1px 5px', borderRadius: '4px', color: '#4ade80', fontWeight: 600 }}>{msg.metadata.selected_model} [{msg.metadata.selected_tier?.toUpperCase()}]</code>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#71717a', fontStyle: 'italic' }}>
-                      {msg.metadata.explanation}
-                    </div>
-                  </div>
-                )}
-
-                {/* Flagship Preserved Card */}
-                {msg.role === 'assistant' && msg.metadata && !msg.metadata.downscaled && msg.metadata.selected_tier === 'large' && (
-                  <div style={{
-                    background: 'linear-gradient(90deg, rgba(244, 63, 94, 0.1), rgba(112, 0, 255, 0.06))',
-                    border: '1px solid rgba(244, 63, 94, 0.3)',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <ShieldCheck size={13} /> FLAGSHIP TIER PRESERVED (Complex Task)
-                      </span>
-                      <span style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: "'JetBrains Mono',monospace" }}>
-                        Quality: {msg.metadata.quality_score}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#e4e4e7' }}>
-                      <span style={{ color: '#a1a1aa' }}>Model: </span>
-                      <code style={{ background: '#09090b', padding: '1px 5px', borderRadius: '4px', color: '#f43f5e', fontWeight: 600 }}>{msg.metadata.selected_model} [LARGE]</code>
-                    </div>
-                  </div>
-                )}
-
-                {/* Assistant Telemetry Header Strip */}
-                {msg.role === 'assistant' && msg.metadata && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: '#111114',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '8px',
-                    padding: '6px 12px',
-                    marginBottom: '8px',
-                    fontSize: '11px',
-                    fontFamily: "'JetBrains Mono',monospace",
-                    gap: '12px',
-                    flexWrap: 'wrap',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
-                        color: getTierColor(msg.metadata.selected_tier),
-                        background: `${getTierColor(msg.metadata.selected_tier)}15`,
-                        border: `1px solid ${getTierColor(msg.metadata.selected_tier)}30`,
-                        borderRadius: '4px',
-                        padding: '1px 7px',
-                        fontWeight: 600,
-                      }}>
-                        {msg.metadata.selected_tier?.toUpperCase()}
-                      </span>
-                      <span style={{ color: '#a1a1aa' }}>{msg.metadata.selected_model}</span>
-                      {msg.metadata.latency_ms && (
-                        <span style={{ color: '#71717a' }}>{msg.metadata.latency_ms.toFixed(1)}ms</span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button
-                        onClick={() => handleCopy(msg.id, msg.content)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: copiedId === msg.id ? '#4ade80' : '#71717a',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '11px',
-                          fontFamily: 'inherit',
-                        }}
-                      >
-                        {copiedId === msg.id ? <Check size={12} /> : <Copy size={12} />}
-                        <span>{copiedId === msg.id ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+              {/* Message Bubble & Metadata */}
+              <div style={{
+                maxWidth: '82%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                alignItems: isUser ? 'flex-end' : 'flex-start'
+              }}>
+                {/* Bubble Content */}
                 <div style={{
-                  background: msg.role === 'user' ? '#181b24' : '#111114',
-                  border: msg.role === 'user' ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: msg.role === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
                   padding: '14px 18px',
-                  fontSize: '0.94rem',
-                  lineHeight: '1.6',
-                  whiteSpace: 'pre-wrap',
+                  borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                  background: isUser ? '#1e2235' : 'rgba(15, 17, 26, 0.95)',
+                  border: isUser ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)',
                   color: '#f8fafc',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
+                  fontSize: '0.93rem',
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                  position: 'relative'
                 }}>
                   {msg.content}
                 </div>
 
-                {/* Technical Routing Details Drawer Attached to Assistant Messages */}
-                {msg.metadata && <RoutingDetailsDrawer metadata={msg.metadata} />}
+                {/* Assistant Telemetry Badges */}
+                {!isUser && meta && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '0.75rem',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                  }}>
+                    {/* Cache Hit Badge */}
+                    {meta.cache_hit ? (
+                      <span className="badge-cache-hit" style={{ padding: '3px 8px', borderRadius: '5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Zap size={12} />
+                        <span>CACHE HIT • $0.00 COST</span>
+                      </span>
+                    ) : (
+                      <span style={{
+                        padding: '3px 8px', borderRadius: '5px', fontWeight: 600,
+                        background: meta.route === 'complex' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: meta.route === 'complex' ? '#f59e0b' : '#10b981',
+                        border: meta.route === 'complex' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)'
+                      }}>
+                        ROUTE: {meta.route?.toUpperCase() || 'DIRECT'}
+                      </span>
+                    )}
+
+                    {/* Model */}
+                    <span style={{ color: 'var(--text-sub)' }}>
+                      Model: <strong style={{ color: '#e2e8f0' }}>{meta.model?.split('/')?.pop() || 'cache'}</strong>
+                    </span>
+
+                    {/* Latency */}
+                    <span style={{ color: 'var(--text-sub)' }}>
+                      Latency: <strong style={{ color: '#00f0ff' }}>{meta.latency_ms} ms</strong>
+                    </span>
+
+                    {/* Cost */}
+                    <span style={{ color: 'var(--text-sub)' }}>
+                      Cost: <strong style={{ color: meta.cache_hit ? '#34d399' : '#e2e8f0' }}>${(meta.cost || 0).toFixed(6)}</strong>
+                    </span>
+
+                    {/* Quality */}
+                    {meta.quality_score != null && (
+                      <span style={{ color: 'var(--text-sub)' }}>
+                        Quality: <strong style={{ color: '#a78bfa' }}>{meta.quality_score}</strong>
+                      </span>
+                    )}
+
+                    {/* Copy action */}
+                    <button
+                      onClick={() => copyToClipboard(msg.content, msg.id)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '4px' }}
+                      title="Copy response"
+                    >
+                      {copiedId === msg.id ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                    </button>
+                  </div>
+                )}
+
+                {/* Escalation Alert */}
+                {!isUser && meta?.escalated && (
+                  <div className="badge-escalated" style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%'
+                  }}>
+                    <AlertCircle size={15} />
+                    <span>
+                      <strong>Quality Escalation Triggered:</strong> {meta.escalation_reason || 'Weak small-model completion detected'} &rarr; Auto-escalated to Large Model Tier.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {loading && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: '#a1a1aa' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              background: 'rgba(99, 102, 241, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(0, 240, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <RefreshCw size={16} className="spin" color="#818cf8" />
+              <Bot size={18} color="#00f0ff" />
             </div>
-            <div style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>Analyzing prompt semantics and determining minimum sufficient model tier...</span>
+            <div style={{
+              padding: '12px 18px', borderRadius: '4px 16px 16px 16px',
+              background: 'rgba(15, 17, 26, 0.95)', border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text-sub)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px'
+            }}>
+              <RefreshCw size={14} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+              <span>Querying Qdrant Cache & Routing Tier...</span>
             </div>
           </div>
         )}
 
         {error && (
           <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '10px',
-            padding: '12px 16px',
-            color: '#fca5a5',
-            fontSize: '0.9rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
+            padding: '12px 16px', borderRadius: '10px',
+            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#f87171', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px'
           }}>
-            <AlertCircle size={18} />
+            <AlertCircle size={16} />
             <span>{error}</span>
           </div>
         )}
@@ -534,52 +416,31 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <form onSubmit={handleSubmit} style={{
-        background: '#111114',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '12px',
-        padding: '8px 12px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-      }}>
+      {/* Input Box */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
         <input
           type="text"
           value={inputPrompt}
           onChange={(e) => setInputPrompt(e.target.value)}
-          placeholder={`Ask ${clientModel} (e.g. 3*4 or complex code)...`}
-          disabled={loading}
+          placeholder="Ask a question, enter code, or test semantic similarity..."
           style={{
             flex: 1,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: '#fff',
+            padding: '14px 18px',
             fontSize: '0.95rem',
-            fontFamily: 'inherit',
+            background: 'rgba(18, 20, 29, 0.9)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px'
           }}
+          disabled={loading}
         />
-
         <button
           type="submit"
-          disabled={!inputPrompt.trim() || loading}
-          style={{
-            background: '#818cf8',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            width: '36px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: !inputPrompt.trim() || loading ? 'not-allowed' : 'pointer',
-            opacity: !inputPrompt.trim() || loading ? 0.4 : 1,
-            transition: 'all 0.15s ease',
-          }}
+          className="btn-primary"
+          disabled={loading || !inputPrompt.trim()}
+          style={{ padding: '0 24px', borderRadius: '12px' }}
         >
           <Send size={16} />
+          <span>Send</span>
         </button>
       </form>
     </div>

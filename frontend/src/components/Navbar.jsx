@@ -1,26 +1,31 @@
 import React from 'react';
-import { Cpu, BarChart2, Layers } from 'lucide-react';
+import { Cpu, TrendingUp, Zap, Database, ArrowLeft } from 'lucide-react';
 import SleekZap from './SleekZap';
 
 export default function Navbar({ activeTab, setActiveTab, health, onReturnToLanding }) {
-  const providerLabel = health?.active_provider ? health.active_provider.toUpperCase() : 'CLOUD API';
+  const providerLabel = health?.llm_provider ? health.llm_provider.toUpperCase() : 'GROQ / OLLAMA';
+  const qdrantBackend = health?.qdrant_backend || 'QDRANT VECTOR DB';
+  const corpusVersion = health?.corpus_version || 'v1';
+  const qdrantEntries = health?.qdrant_entries ?? 0;
 
   return (
     <header style={{
       borderBottom: '1px solid var(--border)',
-      background: 'rgba(9, 10, 15, 0.85)',
-      backdropFilter: 'blur(12px)',
+      background: 'rgba(9, 10, 15, 0.88)',
+      backdropFilter: 'blur(16px)',
       position: 'sticky',
       top: 0,
       zIndex: 50,
       padding: '12px 24px'
     }}>
       <div style={{
-        maxWidth: '1280px',
+        maxWidth: '1360px',
         margin: '0 auto',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
       }}>
         {/* Brand */}
         <div
@@ -29,30 +34,24 @@ export default function Navbar({ activeTab, setActiveTab, health, onReturnToLand
           title="Return to Landing Page"
         >
           <div style={{
-            width: '38px',
-            height: '38px',
+            width: '40px',
+            height: '40px',
             borderRadius: '11px',
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%)',
-            border: '1px solid rgba(129, 140, 248, 0.35)',
+            background: 'linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(99, 102, 241, 0.3) 100%)',
+            border: '1px solid rgba(0, 240, 255, 0.4)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 20px rgba(99, 102, 241, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.25)',
+            boxShadow: '0 0 20px rgba(0, 240, 255, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.25)',
             position: 'relative',
             overflow: 'hidden',
           }}>
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.25), transparent 70%)',
-              pointerEvents: 'none',
-            }} />
-            <SleekZap size={20} variant="cyan" glow={true} />
+            <SleekZap size={22} variant="cyan" glow={true} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '1.15rem', letterSpacing: '-0.02em' }}>
-                AdaptiveRoute
+              <span style={{ fontWeight: 700, fontSize: '1.2rem', letterSpacing: '-0.02em', color: '#f8fafc' }}>
+                SemanticRouter
               </span>
               <span style={{
                 fontSize: '0.68rem',
@@ -60,27 +59,28 @@ export default function Navbar({ activeTab, setActiveTab, health, onReturnToLand
                 textTransform: 'uppercase',
                 padding: '2px 8px',
                 borderRadius: '6px',
-                background: 'rgba(99, 102, 241, 0.15)',
-                color: '#818cf8',
-                border: '1px solid rgba(99, 102, 241, 0.3)'
+                background: 'rgba(0, 240, 255, 0.12)',
+                color: '#00f0ff',
+                border: '1px solid rgba(0, 240, 255, 0.3)'
               }}>
-                ML Gateway
+                Cost-Aware AI
               </span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Intelligent Dynamic Routing & Cascading
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+              Qdrant Semantic Cache • Deterministic Routing • Tier Escalation
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             onClick={onReturnToLanding}
             className="nav-link"
-            style={{ color: '#818cf8', borderColor: 'rgba(129, 140, 248, 0.2)' }}
+            style={{ color: '#94a3b8', fontSize: '0.85rem' }}
           >
-            <span>← Landing</span>
+            <ArrowLeft size={15} />
+            <span>Landing</span>
           </button>
           <button
             onClick={() => setActiveTab('chat')}
@@ -90,28 +90,45 @@ export default function Navbar({ activeTab, setActiveTab, health, onReturnToLand
             <span>Chat Gateway</span>
           </button>
           <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tuning')}
+            className={`nav-link ${activeTab === 'tuning' ? 'active' : ''}`}
           >
-            <BarChart2 size={16} />
-            <span>Experiments & Metrics</span>
+            <TrendingUp size={16} />
+            <span>Threshold Tuning</span>
           </button>
           <button
-            onClick={() => setActiveTab('models')}
-            className={`nav-link ${activeTab === 'models' ? 'active' : ''}`}
+            onClick={() => setActiveTab('benchmark')}
+            className={`nav-link ${activeTab === 'benchmark' ? 'active' : ''}`}
           >
-            <Layers size={16} />
-            <span>Model Registry</span>
+            <Zap size={16} />
+            <span>Empirical Benchmark</span>
           </button>
         </nav>
 
-        {/* Status indicator */}
+        {/* Operational Status Indicators */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Vector Cache Status */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            fontSize: '0.8rem',
+            fontSize: '0.78rem',
+            padding: '5px 12px',
+            borderRadius: '20px',
+            background: 'rgba(0, 240, 255, 0.08)',
+            border: '1px solid rgba(0, 240, 255, 0.25)',
+            color: '#00f0ff'
+          }}>
+            <Database size={13} />
+            <span>Vector Cache: {qdrantEntries} points ({corpusVersion})</span>
+          </div>
+
+          {/* Provider status */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.78rem',
             padding: '5px 12px',
             borderRadius: '20px',
             background: 'rgba(16, 185, 129, 0.1)',
@@ -125,7 +142,7 @@ export default function Navbar({ activeTab, setActiveTab, health, onReturnToLand
               background: '#10b981',
               boxShadow: '0 0 8px #10b981'
             }}></span>
-            <span>Provider: {providerLabel}</span>
+            <span>{providerLabel}</span>
           </div>
         </div>
       </div>

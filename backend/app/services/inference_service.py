@@ -77,7 +77,25 @@ class InferenceService:
             except Exception:
                 decision = router.route(analysis, force_policy=force_policy)
         else:
-            decision = router.route(analysis, force_policy=force_policy)
+            # Automatic dynamic routing with LLM Grok/Groq complexity evaluation:
+            # Evaluates prompt complexity and auto-switches between smallest and largest available models
+            try:
+                from backend.app.router.llm_complexity_evaluator import llm_complexity_evaluator
+                eval_res = await llm_complexity_evaluator.evaluate_complexity(prompt)
+                decision = RoutingDecision(
+                    selected_tier=eval_res.tier,
+                    selected_model=eval_res.selected_model,
+                    confidence=0.95 if eval_res.tier == ModelTier.SMALL else 0.98,
+                    policy_name="llm_grok_complexity",
+                    predicted_qualities={
+                        "small": 0.95 if eval_res.tier == ModelTier.SMALL else 0.25,
+                        "large": 0.98 if eval_res.tier == ModelTier.LARGE else 0.35,
+                    },
+                    explanation=f"LLM Grok/Groq evaluation ({eval_res.reason}) -> Auto-switched to {eval_res.tier.value.upper()} [{eval_res.selected_model}] from available models [{eval_res.smallest_model} | {eval_res.largest_model}].",
+                )
+            except Exception as e:
+                logger.warning(f"Error in LLM complexity evaluator ({e}). Falling back to heuristic router.")
+                decision = router.route(analysis, force_policy=force_policy)
 
         current_tier = decision.selected_tier
         current_model_name = decision.selected_model

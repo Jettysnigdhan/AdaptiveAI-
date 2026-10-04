@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Chat from './pages/Chat';
-import Dashboard from './pages/Dashboard';
-import Models from './pages/Models';
+import ThresholdTuning from './pages/ThresholdTuning';
+import BenchmarkView from './pages/BenchmarkView';
 import Landing from './pages/Landing';
 import { fetchHealth } from './services/api';
 
@@ -11,23 +11,43 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('chat');
   const [health, setHealth] = useState(null);
 
-  useEffect(() => {
+  const checkHealth = () => {
     fetchHealth()
       .then(setHealth)
       .catch((err) => console.warn('Could not contact gateway:', err));
+  };
+
+  useEffect(() => {
+    checkHealth();
+    const interval = setInterval(checkHealth, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   if (view === 'landing') {
-    return <Landing onEnterApp={() => setView('app')} />;
+    return (
+      <Landing
+        onEnterApp={(targetTab = 'chat') => {
+          setView('app');
+          if (targetTab && targetTab !== 'dashboard') setActiveTab(targetTab);
+          else setActiveTab('chat');
+        }}
+        health={health}
+      />
+    );
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} health={health} onReturnToLanding={() => setView('landing')} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        health={health}
+        onReturnToLanding={() => setView('landing')}
+      />
       <main style={{ flex: 1 }}>
         {activeTab === 'chat' && <Chat />}
-        {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'models' && <Models />}
+        {activeTab === 'tuning' && <ThresholdTuning />}
+        {activeTab === 'benchmark' && <BenchmarkView />}
       </main>
     </div>
   );

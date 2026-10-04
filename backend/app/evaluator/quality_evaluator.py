@@ -102,6 +102,28 @@ class QualityEvaluator:
         if any(w in prompt_lower for w in ["explain", "why", "describe"]) and len(response_text.split()) < 15:
             quality -= 0.25
 
+        # Improve scoring for architecture/system design questions
+        if any(w in prompt_lower for w in ["architecture", "system design", "scalable", "distributed", "microservices", "event-driven"]):
+            # Check for architectural concepts in response
+            arch_keywords = ["microservices", "event-driven", "load balancer", "database", "cache",
+                           "scalability", "throughput", "latency", "fault tolerance", "kafka",
+                           "message queue", "api gateway", "container", "orchestration"]
+            arch_matches = sum(1 for kw in arch_keywords if kw.lower() in response_text.lower())
+            if arch_matches >= 3:
+                quality += 0.25  # Reward good architectural answers
+                logger.debug(f"Architecture response detected with {arch_matches} keywords")
+            elif arch_matches == 0:
+                quality -= 0.2  # Mild penalty for missing architectural concepts
+
+        # Improve scoring for code/technical questions
+        if any(w in prompt_lower for w in ["code", "program", "algorithm", "function", "class", "method"]):
+            # Check if response contains technical details
+            code_indicators = ["def ", "class ", "function(", "import ", "return ", "if ", "for ", "while "]
+            has_technical_details = any(indicator in response_text for indicator in code_indicators)
+            if has_technical_details:
+                quality += 0.15
+                logger.debug("Technical/code response detected with proper details")
+
         if finish_reason != "stop":
             quality -= 0.20
 

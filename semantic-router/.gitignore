@@ -1,0 +1,29 @@
+# Environment and Secrets
+.env
+*.env
+*.pem
+*.key
+
+# Data and SQLite
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing & Linting
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Virtual Environment
+venv/
+env/
+.venv/

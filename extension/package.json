@@ -1,7 +1,7 @@
 {
   "name": "adaptiveroute-ai",
   "displayName": "AdaptiveRoute — Intelligent Claude & LLM Gateway",
-  "description": "Dynamic ML model router and cost-optimizer for Claude, Grok, and ChatGPT in Cursor/VS Code. Auto-downscales simple prompts like 3*4 to small tier.",
+  "description": "Dynamic ML model router strictly using models available in this codebase/IDE. Automatically downscales low-complexity queries to the fastest free models.",
   "version": "1.0.0",
   "publisher": "adaptiveroute",
   "engines": {
@@ -36,6 +36,12 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "languageModelChatProviders": [
+      {
+        "vendor": "adaptiveroute",
+        "displayName": "Adaptive AI (Auto-Routed Free Models)"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -49,7 +55,7 @@
       "adaptiveroute-sidebar": [
         {
           "id": "adaptiveroute.chatView",
-          "name": "Adaptive Claude Chat",
+          "name": "Adaptive AI Chat",
           "type": "webview"
         }
       ]
@@ -62,7 +68,7 @@
       },
       {
         "command": "adaptiveroute.askSelection",
-        "title": "AdaptiveRoute: Ask Claude about Selection",
+        "title": "AdaptiveRoute: Ask AI about Selection",
         "icon": "$(sparkle)"
       },
       {
@@ -105,18 +111,17 @@
         },
         "adaptiveroute.defaultModel": {
           "type": "string",
-          "default": "claude-3-5-sonnet",
+          "default": "adaptive-auto",
           "enum": [
-            "claude-3-5-sonnet",
-            "claude-3-5-haiku",
-            "gpt-4o",
-            "gpt-4o-mini",
-            "grok-2",
-            "grok-2-mini",
-            "deepseek-r1:8b",
-            "adaptive-auto"
+            "adaptive-auto",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-120b",
+            "qwen2.5:0.5b",
+            "qwen2.5-coder:1.5b",
+            "deepseek-r1:8b"
           ],
-          "description": "Default model presented in the chat header (auto-downscaled when prompt complexity is low)."
+          "description": "Default model presented in the chat header (auto-routed between available models)."
         },
         "adaptiveroute.autoDownscale": {
           "type": "boolean",
